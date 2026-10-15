@@ -69,7 +69,7 @@ final class NotulenUITests: XCTestCase {
         let row = app.buttons["opname-Offertegesprek badkamer"]
         XCTAssertTrue(row.waitForExistence(timeout: 15))
         row.tap()
-        XCTAssertTrue(app.staticTexts["Spreker 1"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Deel met AI"].firstMatch.waitForExistence(timeout: 5))
         shot("10-ai-stap1-gesprek")
 
         app.buttons["Deel met AI"].firstMatch.tap()
@@ -84,7 +84,7 @@ final class NotulenUITests: XCTestCase {
         shot("12-ai-stap3-kies-taak")
 
         app.buttons["Samenvatting en actiepunten"].tap()
-        sleep(10)
+        waitForSafari()
         shot("13-ai-stap4-chatgpt-geopend")
 
         // Lang gesprek: via het klembord, met uitleg.
@@ -100,8 +100,16 @@ final class NotulenUITests: XCTestCase {
         XCTAssertTrue(alert.waitForExistence(timeout: 5), "melding bij lang gesprek")
         shot("14-ai-lang-gesprek-melding")
         alert.buttons["Open Claude"].tap()
-        sleep(10)
+        waitForSafari()
         shot("15-ai-claude-geopend")
+    }
+
+    /// In de simulator staan de ChatGPT- en Claude-apps niet, dus opent Safari.
+    /// Wachten tot die echt op de voorgrond staat en de pagina geladen is.
+    private func waitForSafari() {
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        XCTAssertTrue(safari.wait(for: .runningForeground, timeout: 30), "website wordt geopend")
+        sleep(15)
     }
 
     func test6_Importeren() {
