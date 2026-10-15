@@ -77,6 +77,7 @@ struct RecordingDetailView: View {
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if rec.status == .done {
+                    AIShareMenu(recording: rec)
                     Button { showSpeakers = true } label: { Image(systemName: "person.2") }
                         .accessibilityLabel("Sprekers benoemen")
                     ShareLink(item: rec.exportText, subject: Text(rec.title)) {

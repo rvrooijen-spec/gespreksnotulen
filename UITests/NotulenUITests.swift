@@ -60,6 +60,14 @@ final class NotulenUITests: XCTestCase {
 
         app.buttons["Meer"].firstMatch.tap()
         shot("05-menu")
+        app.buttons["Meer"].firstMatch.tap()  // menu sluiten
+
+        app.buttons["Deel met AI"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["Deel met ChatGPT"].waitForExistence(timeout: 5), "AI-menu toont ChatGPT")
+        XCTAssertTrue(app.buttons["Deel met Claude"].exists, "AI-menu toont Claude")
+        app.buttons["Deel met Claude"].tap()
+        XCTAssertTrue(app.buttons["Samenvatting en actiepunten"].waitForExistence(timeout: 5), "taken zichtbaar")
+        shot("05b-deel-met-ai")
     }
 
     func test2_Zoeken() {
