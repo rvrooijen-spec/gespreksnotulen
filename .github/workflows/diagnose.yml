@@ -4,10 +4,6 @@ name: Diagnose gaten in transcriptie
 # schrijft het uit met en zonder VAD-opdeling, om te zien of er tekst wegvalt.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/diagnose.yml
 
 jobs:
   diagnose:

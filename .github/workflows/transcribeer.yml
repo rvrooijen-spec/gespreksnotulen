@@ -13,7 +13,6 @@ on:
       - "testopnames/**.M4A"
       - "testopnames/**.MP3"
       - "testopnames/**.WAV"
-      - .github/workflows/transcribeer.yml
 
 permissions:
   contents: write
@@ -28,6 +27,8 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Nieuwste Xcode kiezen
         uses: maxim-lobanov/setup-xcode@v1
@@ -51,9 +52,19 @@ jobs:
 
       - name: Uitschrijven
         run: |
-          shopt -s nullglob nocaseglob
-          files=(testopnames/*.m4a testopnames/*.mp3 testopnames/*.wav)
-          if [ ${#files[@]} -eq 0 ]; then echo "Geen audiobestanden in testopnames/"; exit 0; fi
+          shopt -s nocasematch
+          files=()
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            # Alleen bestanden die bij deze upload nieuw of gewijzigd zijn.
+            while IFS= read -r f; do
+              [[ "$f" =~ \.(m4a|mp3|wav)$ ]] && [ -f "$f" ] && files+=("$f")
+            done < <(git diff --name-only --diff-filter=AM "${{ github.event.before }}" "${{ github.sha }}" -- testopnames/)
+          else
+            # Handmatig gestart: alles in de map.
+            for f in testopnames/*; do [[ "$f" =~ \.(m4a|mp3|wav)$ ]] && files+=("$f"); done
+          fi
+          if [ ${#files[@]} -eq 0 ]; then echo "Geen nieuwe audiobestanden"; exit 0; fi
+          printf 'Uitschrijven: %s\n' "${files[@]}"
           mkdir -p ~/notulen-modellen
           MODELS_DIR=~/notulen-modellen build-test/Build/Products/Release/PipelineTest --transcribe uitvoer "${files[@]}"
 
@@ -61,7 +72,12 @@ jobs:
         if: always()
         run: |
           [ -d uitvoer ] || exit 0
-          cd uitvoer
+          git fetch origin transcripties:transcripties 2>/dev/null || true
+          mkdir pub && cd pub
+          if git -C .. rev-parse --verify transcripties >/dev/null 2>&1; then
+            git -C .. archive transcripties | tar -x
+          fi
+          cp ../uitvoer/* .
           git init -q -b transcripties
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
