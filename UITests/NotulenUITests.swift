@@ -138,7 +138,9 @@ final class NotulenUITests: XCTestCase {
         app.buttons["Deel als tekstbestand"].tap()
         XCTAssertTrue(app.buttons["Notulen maken"].waitForExistence(timeout: 5))
         app.buttons["Notulen maken"].tap()
-        sleep(3)
+        let shareSheet = app.otherElements["ActivityListView"]
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 10), "iOS-deelmenu verschijnt met het tekstbestand")
+        sleep(2)
         shot("17-deel-als-tekstbestand")
     }
 

@@ -92,7 +92,6 @@ struct AIShareMenu: View {
     @Environment(\.openURL) private var openURL
     @State private var pending: (assistant: AIAssistant, message: String)?
     @State private var needsMySpeaker = false
-    @State private var fileToShare: SharedFile?
     var onChooseSpeakers: () -> Void = {}
 
     /// Langere teksten passen niet betrouwbaar in een link; die gaan via het klembord.
@@ -121,7 +120,9 @@ struct AIShareMenu: View {
                         if task.needsMySpeaker, recording.mySpeaker == nil {
                             needsMySpeaker = true
                         } else {
-                            fileToShare = SharedFile.make(for: recording, task: task)
+                            if let file = SharedFile.make(for: recording, task: task) {
+                                ShareSheet.present([file.url])
+                            }
                         }
                     }
                 }
@@ -141,11 +142,6 @@ struct AIShareMenu: View {
             Button("Annuleer", role: .cancel) {}
         } message: { item in
             Text("Het gesprek is te lang om automatisch in te vullen. Het staat op het klembord: houd in \(item.assistant.rawValue) je vinger in het tekstveld en kies Plak.")
-        }
-        .sheet(item: $fileToShare) { file in
-            ActivityView(items: [file.url])
-                .presentationDetents([.medium, .large])
-                .ignoresSafeArea()
         }
         .alert("Welke spreker ben jij?", isPresented: $needsMySpeaker) {
             Button("Sprekers openen") { onChooseSpeakers() }
@@ -193,13 +189,26 @@ struct SharedFile: Identifiable {
     }
 }
 
-/// Het standaard iOS-deelmenu.
-struct ActivityView: UIViewControllerRepresentable {
-    let items: [Any]
+/// Het standaard iOS-deelmenu, direct getoond vanaf het bovenste scherm
+/// (betrouwbaarder dan via een SwiftUI-sheet).
+@MainActor
+enum ShareSheet {
+    static func present(_ items: [Any]) {
+        guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) ?? UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let root = scene.windows.first(where: \.isKeyWindow)?.rootViewController ?? scene.windows.first?.rootViewController
+        else { return }
+        var top = root
+        while let presented = top.presentedViewController { top = presented }
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        // iPad / grote schermen: anker nodig voor de popover.
+        controller.popoverPresentationController?.sourceView = top.view
+        controller.popoverPresentationController?.sourceRect = CGRect(x: top.view.bounds.midX, y: 80, width: 1, height: 1)
+        // Menu's van SwiftUI hebben even tijd nodig om te sluiten.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            top.present(controller, animated: true)
+        }
     }
-
-    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
