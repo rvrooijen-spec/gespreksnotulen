@@ -1,4 +1,5 @@
 import Foundation
+import WhisperKit
 
 // Test van de rekenkern op een Mac (GitHub Actions). Draait exact dezelfde
 // code als de app: TranscriptionPipeline, AudioFiles en Models.
@@ -59,7 +60,8 @@ if args.count >= 4, args[1] == "--transcribe" {
         print("== \(url.lastPathComponent) ==")
         let start = Date()
         do {
-            let utterances = try await pipeline.transcribe(audioPath: path, expectedSpeakers: nil, phase: { _ in }, shouldContinue: { true })
+            let chunking: ChunkingStrategy = ProcessInfo.processInfo.environment["NOTULEN_CHUNKING"] == "none" ? .none : .vad
+            let utterances = try await pipeline.transcribe(audioPath: path, expectedSpeakers: nil, chunking: chunking, phase: { _ in }, shouldContinue: { true })
             var rec = Recording(
                 title: url.deletingPathExtension().lastPathComponent,
                 createdAt: Date(),

@@ -122,6 +122,7 @@ final class TranscriptionPipeline: @unchecked Sendable {
     func transcribe(
         audioPath: String,
         expectedSpeakers: Int?,
+        chunking: ChunkingStrategy = .vad,
         phase: @escaping @Sendable (Phase) -> Void,
         shouldContinue: @escaping @Sendable () -> Bool
     ) async throws -> [Utterance] {
@@ -146,7 +147,7 @@ final class TranscriptionPipeline: @unchecked Sendable {
             detectLanguage: false,
             skipSpecialTokens: true,
             wordTimestamps: true,
-            chunkingStrategy: .vad
+            chunkingStrategy: chunking
         )
         let progress = whisperKit.progress
         let callback: TranscriptionCallback = { _ in
