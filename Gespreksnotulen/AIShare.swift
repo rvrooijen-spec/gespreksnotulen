@@ -89,6 +89,7 @@ struct AIShareMenu: View {
     @Environment(\.openURL) private var openURL
     @State private var pending: (assistant: AIAssistant, message: String)?
     @State private var needsMySpeaker = false
+    @State private var fileToShare: SharedFile?
     var onChooseSpeakers: () -> Void = {}
 
     /// Langere teksten passen niet betrouwbaar in een link; die gaan via het klembord.
@@ -109,6 +110,19 @@ struct AIShareMenu: View {
                     }
                 }
             }
+            // Als .txt via het deelmenu: werkt ook voor lange gesprekken, en met
+            // elke app (ChatGPT, Claude, Mail, Bestanden, ...).
+            Menu("Deel als tekstbestand") {
+                ForEach(AITask.allCases) { task in
+                    Button(task.rawValue, systemImage: task.systemImage) {
+                        if task.onlyMySpeaker, recording.mySpeaker == nil {
+                            needsMySpeaker = true
+                        } else {
+                            fileToShare = SharedFile.make(for: recording, task: task)
+                        }
+                    }
+                }
+            }
         } label: {
             Image(systemName: "sparkles")
                 .accessibilityLabel("Deel met AI")
@@ -124,6 +138,11 @@ struct AIShareMenu: View {
             Button("Annuleer", role: .cancel) {}
         } message: { item in
             Text("Het gesprek is te lang om automatisch in te vullen. Het staat op het klembord: houd in \(item.assistant.rawValue) je vinger in het tekstveld en kies Plak.")
+        }
+        .sheet(item: $fileToShare) { file in
+            ActivityView(items: [file.url])
+                .presentationDetents([.medium, .large])
+                .ignoresSafeArea()
         }
         .alert("Welke spreker ben jij?", isPresented: $needsMySpeaker) {
             Button("Sprekers openen") { onChooseSpeakers() }
@@ -141,4 +160,43 @@ struct AIShareMenu: View {
             pending = (assistant, message)
         }
     }
+}
+
+/// Tijdelijk .txt-bestand met opdracht en gesprek, om te delen.
+struct SharedFile: Identifiable {
+    let url: URL
+    var id: URL { url }
+
+    static func make(for recording: Recording, task: AITask) -> SharedFile? {
+        let safeTitle = recording.title
+            .components(separatedBy: CharacterSet(charactersIn: "/\\:?%*|\"<>"))
+            .joined(separator: "-")
+        let suffix: String
+        switch task {
+        case .summary: suffix = "samenvatting"
+        case .minutes: suffix = "notulen"
+        case .myBusinessPart: suffix = "mijn inbreng zakelijk"
+        case .textOnly: suffix = "tekst"
+        }
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Delen", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let url = folder.appendingPathComponent("\(safeTitle) - \(suffix).txt")
+        do {
+            try task.message(for: recording).write(to: url, atomically: true, encoding: .utf8)
+            return SharedFile(url: url)
+        } catch {
+            return nil
+        }
+    }
+}
+
+/// Het standaard iOS-deelmenu.
+struct ActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

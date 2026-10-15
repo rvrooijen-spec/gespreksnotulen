@@ -81,6 +81,7 @@ final class NotulenUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Deel met Claude"].exists, "AI-menu toont Claude")
         shot("11-ai-stap2-kies-chatgpt-of-claude")
 
+        XCTAssertTrue(app.buttons["Deel als tekstbestand"].exists, "AI-menu toont tekstbestand")
         app.buttons["Deel met ChatGPT"].tap()
         XCTAssertTrue(app.buttons["Samenvatting en actiepunten"].waitForExistence(timeout: 5), "taken zichtbaar")
         XCTAssertTrue(app.buttons["Notulen maken"].exists)
@@ -126,6 +127,19 @@ final class NotulenUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Open Dictafoon"].waitForExistence(timeout: 5), "uitleg Dictafoon")
         XCTAssertTrue(app.buttons["Kies een audiobestand"].exists, "optie Bestanden")
         shot("16-importeren")
+    }
+
+    func test7_DelenAlsTekstbestand() {
+        app.launch()
+        let row = app.buttons["opname-Offertegesprek badkamer"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15))
+        row.tap()
+        app.buttons["Deel met AI"].firstMatch.tap()
+        app.buttons["Deel als tekstbestand"].tap()
+        XCTAssertTrue(app.buttons["Notulen maken"].waitForExistence(timeout: 5))
+        app.buttons["Notulen maken"].tap()
+        sleep(3)
+        shot("17-deel-als-tekstbestand")
     }
 
     func test2_Zoeken() {
