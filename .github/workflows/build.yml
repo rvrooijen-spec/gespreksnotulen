@@ -1,0 +1,70 @@
+name: iPhone-app bouwen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nieuwste Xcode kiezen
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Xcode-project genereren
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: App bouwen (zonder ondertekening)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Gespreksnotulen.xcodeproj \
+            -scheme Gespreksnotulen \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            build 2>&1 | grep -vE '^\s*$' | tail -n 400
+
+      - name: IPA-bestand maken
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Gespreksnotulen.app Payload/
+          zip -qry Notulen.ipa Payload
+          ls -lh Notulen.ipa
+
+      - name: Bewaren als build-artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Notulen-ipa
+          path: Notulen.ipa
+          retention-days: 30
+
+      - name: Publiceren als release "laatste"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete laatste --yes --cleanup-tag || true
+          gh release create laatste Notulen.ipa \
+            --title "Notulen – build ${{ github.run_number }}" \
+            --notes "Automatisch gebouwd vanaf ${{ github.sha }}. Installeer Notulen.ipa met AltStore of Sideloadly."
