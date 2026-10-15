@@ -8,7 +8,7 @@ final class NotulenUITests: XCTestCase {
     override func setUp() {
         continueAfterFailure = true
         app = XCUIApplication()
-        app.launchArguments = ["-demoData"]
+        app.launchArguments = ["-demoData", "-AppleLanguages", "(nl)", "-AppleLocale", "nl_NL"]
         // Systeemmeldingen (bijv. microfoontoegang) automatisch toestaan.
         addUIInterruptionMonitor(withDescription: "Systeemmelding") { alert in
             for label in ["Allow", "OK", "Sta toe", "Toestaan"] where alert.buttons[label].exists {
