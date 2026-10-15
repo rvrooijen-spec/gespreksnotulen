@@ -25,6 +25,7 @@ enum AIAssistant: String, CaseIterable, Identifiable {
 enum AITask: String, CaseIterable, Identifiable {
     case summary = "Samenvatting en actiepunten"
     case minutes = "Notulen maken"
+    case myBusinessPart = "Mijn inbreng: zakelijk verslag functioneren"
     case textOnly = "Alleen de tekst"
 
     var id: String { rawValue }
@@ -33,9 +34,13 @@ enum AITask: String, CaseIterable, Identifiable {
         switch self {
         case .summary: return "list.bullet.clipboard"
         case .minutes: return "doc.text"
+        case .myBusinessPart: return "person.badge.shield.checkmark"
         case .textOnly: return "text.quote"
         }
     }
+
+    /// Deze taak deelt alleen wat de gebruiker zelf zei.
+    var onlyMySpeaker: Bool { self == .myBusinessPart }
 
     var instruction: String? {
         switch self {
@@ -51,14 +56,29 @@ enum AITask: String, CaseIterable, Identifiable {
             Maak er nette notulen van in het Nederlands met de kopjes: Aanwezigen, Besproken punten, \
             Besluiten en Actiepunten (met wie en wanneer).
             """
+        case .myBusinessPart:
+            return """
+            Hieronder staan uitsluitend mijn eigen uitspraken uit een werkgesprek met een medewerker \
+            (automatisch uitgeschreven, er kunnen fouten in zitten). Maak hiervan een kort, zakelijk verslag \
+            in het Nederlands over het functioneren van de medewerker, met de kopjes: Functioneren en resultaten, \
+            Gedrag en samenwerking, Afspraken en verbeterpunten, Vervolg.
+            Strikte regels:
+            - Alleen inhoudelijke, zakelijke punten over werk en functioneren.
+            - Laat alles weg wat privé is: gezondheid, ziekte, familie, relaties, financiën, \
+            religie en andere persoonlijke omstandigheden, ook als ik het zelf noemde.
+            - Laat small talk, grapjes en randzaken weg.
+            - Geen citaten of namen van derden; feitelijk en neutraal geformuleerd.
+            - Voeg niets toe dat niet in de tekst staat.
+            """
         case .textOnly:
             return nil
         }
     }
 
     func message(for recording: Recording) -> String {
-        guard let instruction else { return recording.exportText }
-        return instruction + "\n\n---\n\n" + recording.exportText
+        let text = onlyMySpeaker ? recording.exportText(onlySpeaker: recording.mySpeaker) : recording.exportText
+        guard let instruction else { return text }
+        return instruction + "\n\n---\n\n" + text
     }
 }
 
@@ -68,6 +88,8 @@ struct AIShareMenu: View {
 
     @Environment(\.openURL) private var openURL
     @State private var pending: (assistant: AIAssistant, message: String)?
+    @State private var needsMySpeaker = false
+    var onChooseSpeakers: () -> Void = {}
 
     /// Langere teksten passen niet betrouwbaar in een link; die gaan via het klembord.
     private let maxPrefillLength = 3_500
@@ -78,7 +100,11 @@ struct AIShareMenu: View {
                 Menu("Deel met \(assistant.rawValue)") {
                     ForEach(AITask.allCases) { task in
                         Button(task.rawValue, systemImage: task.systemImage) {
-                            share(task.message(for: recording), with: assistant)
+                            if task.onlyMySpeaker, recording.mySpeaker == nil {
+                                needsMySpeaker = true
+                            } else {
+                                share(task.message(for: recording), with: assistant)
+                            }
                         }
                     }
                 }
@@ -98,6 +124,12 @@ struct AIShareMenu: View {
             Button("Annuleer", role: .cancel) {}
         } message: { item in
             Text("Het gesprek is te lang om automatisch in te vullen. Het staat op het klembord: houd in \(item.assistant.rawValue) je vinger in het tekstveld en kies Plak.")
+        }
+        .alert("Welke spreker ben jij?", isPresented: $needsMySpeaker) {
+            Button("Sprekers openen") { onChooseSpeakers() }
+            Button("Annuleer", role: .cancel) {}
+        } message: {
+            Text("Zet bij jouw spreker 'Dit ben ik' aan. Dan deelt de app alleen jouw eigen uitspraken.")
         }
     }
 

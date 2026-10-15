@@ -9,6 +9,7 @@ struct SpeakerNamesView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var player = AudioPlayer()
     @State private var names: [Int: String] = [:]
+    @State private var mySpeaker: Int?
 
     var body: some View {
         NavigationStack {
@@ -19,6 +20,11 @@ struct SpeakerNamesView: View {
                             TextField("Spreker \(speaker)", text: binding(for: speaker))
                                 .textInputAutocapitalization(.words)
                                 .accessibilityIdentifier("naam-\(speaker)")
+                            Toggle("Dit ben ik", isOn: Binding(
+                                get: { mySpeaker == speaker },
+                                set: { mySpeaker = $0 ? speaker : (mySpeaker == speaker ? nil : mySpeaker) }
+                            ))
+                            .accessibilityIdentifier("ik-\(speaker)")
                             if let first = rec.utterances.first(where: { $0.speaker == speaker }) {
                                 Button {
                                     player.play(url: store.audioURL(for: rec), from: first.start)
@@ -44,13 +50,17 @@ struct SpeakerNamesView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Bewaar") {
-                        store.update(recordingID) { $0.speakerNames = names }
+                        store.update(recordingID) {
+                            $0.speakerNames = names
+                            $0.mySpeaker = mySpeaker
+                        }
                         dismiss()
                     }
                 }
             }
             .onAppear {
                 names = store.recording(withID: recordingID)?.speakerNames ?? [:]
+                mySpeaker = store.recording(withID: recordingID)?.mySpeaker
             }
             .onDisappear { player.stop() }
         }

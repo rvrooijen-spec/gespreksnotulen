@@ -30,6 +30,8 @@ struct Recording: Codable, Identifiable, Hashable {
     var speakerNames: [Int: String] = [:]
     /// Aantal sprekers dat de gebruiker heeft opgegeven, `nil` = automatisch.
     var expectedSpeakers: Int?
+    /// Welke spreker de gebruiker zelf is ("Dit ben ik"), `nil` = niet aangegeven.
+    var mySpeaker: Int?
 
     var speakers: [Int] {
         Array(Set(utterances.compactMap(\.speaker))).sorted()
@@ -44,9 +46,12 @@ struct Recording: Codable, Identifiable, Hashable {
     }
 
     /// Platte tekst om te delen of op te slaan.
-    var exportText: String {
+    var exportText: String { exportText(onlySpeaker: nil) }
+
+    /// Platte tekst; met `onlySpeaker` alleen de uitspraken van die spreker.
+    func exportText(onlySpeaker: Int?) -> String {
         var lines = [title, "\(createdAt.formatted(date: .long, time: .shortened)) · \(Format.duration(duration))", ""]
-        for u in utterances {
+        for u in utterances where onlySpeaker == nil || u.speaker == onlySpeaker {
             lines.append("[\(Format.timestamp(u.start))] \(name(for: u.speaker)): \(u.text)")
             lines.append("")
         }

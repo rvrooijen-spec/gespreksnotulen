@@ -50,6 +50,10 @@ final class NotulenUITests: XCTestCase {
         let field2 = app.textFields["naam-2"]
         field2.tap()
         field2.typeText("Petra")
+        let me = app.switches["ik-1"]
+        XCTAssertTrue(me.exists, "schakelaar 'Dit ben ik'")
+        me.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        XCTAssertEqual(me.value as? String, "1", "'Dit ben ik' staat aan bij spreker 1")
         shot("03-sprekers-benoemen")
         app.buttons["Bewaar"].tap()
 
