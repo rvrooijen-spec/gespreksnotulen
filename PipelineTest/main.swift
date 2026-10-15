@@ -43,6 +43,42 @@ func finish() -> Never {
 }
 
 let args = CommandLine.arguments
+
+// MARK: Modus "--transcribe <uitvoermap> <audio...>": echte opnames uitschrijven
+// (gebruikt door .github/workflows/transcribeer.yml).
+if args.count >= 4, args[1] == "--transcribe" {
+    let outputDir = URL(fileURLWithPath: args[2], isDirectory: true)
+    try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+    let modelsDir = ProcessInfo.processInfo.environment["MODELS_DIR"] ?? NSTemporaryDirectory() + "notulen-modellen"
+    let defaults = UserDefaults(suiteName: "nl.rvrooijen.pipelinetest")!
+    let pipeline = TranscriptionPipeline(modelsURL: URL(fileURLWithPath: modelsDir, isDirectory: true), defaults: defaults)
+    try await pipeline.prepare { _ in }
+    var failed = false
+    for path in args[3...] {
+        let url = URL(fileURLWithPath: path)
+        print("== \(url.lastPathComponent) ==")
+        let start = Date()
+        do {
+            let utterances = try await pipeline.transcribe(audioPath: path, expectedSpeakers: nil, phase: { _ in }, shouldContinue: { true })
+            var rec = Recording(
+                title: url.deletingPathExtension().lastPathComponent,
+                createdAt: Date(),
+                duration: AudioFiles.duration(of: url) ?? 0,
+                audioFileName: url.lastPathComponent
+            )
+            rec.utterances = utterances
+            let text = rec.exportText
+            print(text)
+            print("(verwerkt in \(Int(Date().timeIntervalSince(start))) s, \(Set(utterances.compactMap(\.speaker)).count) sprekers)")
+            try text.write(to: outputDir.appendingPathComponent(rec.title + ".txt"), atomically: true, encoding: .utf8)
+        } catch {
+            print("Mislukt: \(error)")
+            failed = true
+        }
+    }
+    exit(failed ? 1 : 0)
+}
+
 guard args.count >= 3 else {
     print("Gebruik: PipelineTest <testgesprek.wav> <dialoog.json>")
     exit(2)

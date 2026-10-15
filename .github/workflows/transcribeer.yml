@@ -1,0 +1,70 @@
+name: Transcribeer testopnames
+
+# Schrijft audiobestanden in testopnames/ uit met dezelfde rekenkern als de app.
+# Resultaat: tekstbestanden op de branch "transcripties".
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "testopnames/**.m4a"
+      - "testopnames/**.mp3"
+      - "testopnames/**.wav"
+      - "testopnames/**.M4A"
+      - "testopnames/**.MP3"
+      - "testopnames/**.WAV"
+      - .github/workflows/transcribeer.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: transcribeer
+  cancel-in-progress: false
+
+jobs:
+  transcribe:
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nieuwste Xcode kiezen
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Modellen uit cache
+        uses: actions/cache@v4
+        with:
+          path: ~/notulen-modellen
+          key: notulen-modellen-v1
+
+      - name: Programma bouwen
+        run: |
+          set -o pipefail
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild -project Gespreksnotulen.xcodeproj -scheme PipelineTest -configuration Release \
+            -destination 'platform=macOS' -derivedDataPath build-test \
+            -skipPackagePluginValidation -skipMacroValidation build 2>&1 | tail -n 20
+
+      - name: Uitschrijven
+        run: |
+          shopt -s nullglob nocaseglob
+          files=(testopnames/*.m4a testopnames/*.mp3 testopnames/*.wav)
+          if [ ${#files[@]} -eq 0 ]; then echo "Geen audiobestanden in testopnames/"; exit 0; fi
+          mkdir -p ~/notulen-modellen
+          MODELS_DIR=~/notulen-modellen build-test/Build/Products/Release/PipelineTest --transcribe uitvoer "${files[@]}"
+
+      - name: Transcripties publiceren
+        if: always()
+        run: |
+          [ -d uitvoer ] || exit 0
+          cd uitvoer
+          git init -q -b transcripties
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Transcripties van ${{ github.sha }}" || exit 0
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" transcripties
