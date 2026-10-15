@@ -7,7 +7,7 @@ iPhone-app die gesprekken opneemt, ze **op de iPhone zelf** in het Nederlands ui
 - Sprekers herkennen met Pyannote (SpeakerKit) en namen geven aan Spreker 1, 2, ...
 - Tik op een uitspraak om die terug te luisteren
 - Delen of kopiëren als tekst; opnames staan ook in de Bestanden-app
-- Bestaande audiobestanden importeren (Dictafoon, m4a/mp3/wav)
+- Opnames uit Dictafoon (ook van de Apple Watch) via **Deel → Notulen**, of importeren (m4a/mp3/wav)
 - Zoeken in alle gesprekken
 - Crashbestendig: er wordt opgenomen in CAF (blijft leesbaar na een crash) en daarna
   automatisch gecomprimeerd naar m4a; tijdens een opname pauzeert het uitschrijven

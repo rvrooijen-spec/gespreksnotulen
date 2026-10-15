@@ -34,6 +34,18 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         ITSAppUsesNonExemptEncryption: false
+        # Zodat Notulen in het deelmenu verschijnt (bijv. vanuit Dictafoon).
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Audio
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.audio
+              - public.mpeg-4-audio
+              - com.apple.m4a-audio
+              - public.mp3
+              - com.microsoft.waveform-audio
+              - com.apple.coreaudio-format
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: nl.rvrooijen.gespreksnotulen

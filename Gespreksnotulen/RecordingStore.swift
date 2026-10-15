@@ -149,6 +149,17 @@ final class RecordingStore: ObservableObject {
         let destination = audioURL(for: rec)
         try FileManager.default.copyItem(at: url, to: destination)
 
+        // Datum van de oorspronkelijke opname gebruiken als die bekend is.
+        let values = try? url.resourceValues(forKeys: [.creationDateKey, .contentModificationDateKey])
+        if let original = [values?.creationDate, values?.contentModificationDate].compactMap({ $0 }).min(),
+           original < rec.createdAt {
+            rec.createdAt = original
+        }
+        // iOS zet gedeelde bestanden soms eerst in Documenten/Inbox; die kopie opruimen.
+        if url.path.contains("/Documents/Inbox/") {
+            try? FileManager.default.removeItem(at: url)
+        }
+
         if let duration = AudioFiles.duration(of: destination), duration > 0 {
             rec.duration = duration
         } else {

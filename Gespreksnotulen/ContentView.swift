@@ -93,23 +93,31 @@ struct ContentView: View {
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.audio]) { result in
             switch result {
             case .success(let url):
-                Task {
-                    do {
-                        let rec = try await store.importAudio(from: url)
-                        if engine.modelsDownloaded { engine.enqueue(rec) }
-                        path = [rec.id]
-                    } catch {
-                        alertMessage = "Importeren mislukt: \(error.localizedDescription)"
-                    }
-                }
+                importFile(url)
             case .failure(let error):
                 alertMessage = error.localizedDescription
             }
+        }
+        // Gedeeld vanuit een andere app, bijv. Dictafoon: Deel → Notulen.
+        .onOpenURL { url in
+            importFile(url)
         }
         .alert("Let op", isPresented: Binding(get: { alertMessage != nil }, set: { if !$0 { alertMessage = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(alertMessage ?? "")
+        }
+    }
+
+    private func importFile(_ url: URL) {
+        Task {
+            do {
+                let rec = try await store.importAudio(from: url)
+                if engine.modelsDownloaded { engine.enqueue(rec) }
+                path = [rec.id]
+            } catch {
+                alertMessage = "Importeren mislukt: \(error.localizedDescription)"
+            }
         }
     }
 
