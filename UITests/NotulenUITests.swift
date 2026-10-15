@@ -60,14 +60,48 @@ final class NotulenUITests: XCTestCase {
 
         app.buttons["Meer"].firstMatch.tap()
         shot("05-menu")
-        app.buttons["Meer"].firstMatch.tap()  // menu sluiten
+    }
+
+    func test5_DelenMetAI() {
+        app.launch()
+
+        // Kort gesprek: de tekst gaat direct mee in de link.
+        let row = app.buttons["opname-Offertegesprek badkamer"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15))
+        row.tap()
+        XCTAssertTrue(app.staticTexts["Spreker 1"].firstMatch.waitForExistence(timeout: 5))
+        shot("10-ai-stap1-gesprek")
 
         app.buttons["Deel met AI"].firstMatch.tap()
         XCTAssertTrue(app.buttons["Deel met ChatGPT"].waitForExistence(timeout: 5), "AI-menu toont ChatGPT")
         XCTAssertTrue(app.buttons["Deel met Claude"].exists, "AI-menu toont Claude")
-        app.buttons["Deel met Claude"].tap()
+        shot("11-ai-stap2-kies-chatgpt-of-claude")
+
+        app.buttons["Deel met ChatGPT"].tap()
         XCTAssertTrue(app.buttons["Samenvatting en actiepunten"].waitForExistence(timeout: 5), "taken zichtbaar")
-        shot("05b-deel-met-ai")
+        XCTAssertTrue(app.buttons["Notulen maken"].exists)
+        XCTAssertTrue(app.buttons["Alleen de tekst"].exists)
+        shot("12-ai-stap3-kies-taak")
+
+        app.buttons["Samenvatting en actiepunten"].tap()
+        sleep(10)
+        shot("13-ai-stap4-chatgpt-geopend")
+
+        // Lang gesprek: via het klembord, met uitleg.
+        app.activate()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let longRow = app.buttons["opname-Lang overleg"]
+        XCTAssertTrue(longRow.waitForExistence(timeout: 10))
+        longRow.tap()
+        app.buttons["Deel met AI"].firstMatch.tap()
+        app.buttons["Deel met Claude"].tap()
+        app.buttons["Notulen maken"].tap()
+        let alert = app.alerts["Tekst gekopieerd"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5), "melding bij lang gesprek")
+        shot("14-ai-lang-gesprek-melding")
+        alert.buttons["Open Claude"].tap()
+        sleep(10)
+        shot("15-ai-claude-geopend")
     }
 
     func test2_Zoeken() {

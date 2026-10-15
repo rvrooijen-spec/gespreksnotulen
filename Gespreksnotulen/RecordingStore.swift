@@ -36,6 +36,21 @@ final class RecordingStore: ObservableObject {
         done.utterances = lines.map { Utterance(speaker: $0.0, start: $0.1, end: $0.1 + 4.5, text: $0.2) }
         save(done)
 
+        var long = makeNewRecording()
+        long.title = "Lang overleg"
+        long.createdAt = Date().addingTimeInterval(-7200)
+        long.duration = 1800
+        long.status = .done
+        long.utterances = (0..<60).map { i in
+            Utterance(
+                speaker: i % 2 + 1,
+                start: Double(i * 30),
+                end: Double(i * 30 + 25),
+                text: "Punt \(i + 1): we bespreken de planning van de verbouwing, de levering van materialen en wie de aannemer belt."
+            )
+        }
+        save(long)
+
         var pending = makeNewRecording()
         pending.title = "Overleg aannemer"
         pending.duration = 754
