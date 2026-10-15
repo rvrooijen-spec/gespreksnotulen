@@ -18,6 +18,7 @@ struct SpeakerNamesView: View {
                         Section {
                             TextField("Spreker \(speaker)", text: binding(for: speaker))
                                 .textInputAutocapitalization(.words)
+                                .accessibilityIdentifier("naam-\(speaker)")
                             if let first = rec.utterances.first(where: { $0.speaker == speaker }) {
                                 Button {
                                     player.play(url: store.audioURL(for: rec), from: first.start)

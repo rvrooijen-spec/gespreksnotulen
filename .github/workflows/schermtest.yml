@@ -1,0 +1,86 @@
+name: Schermtest
+
+# Opent de app in de iPhone-simulator met voorbeeldgesprekken, tikt alle schermen
+# door en bewaart schermafbeeldingen op de branch "schermafbeeldingen".
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - Gespreksnotulen/**
+      - UITests/**
+      - project.yml
+      - .github/workflows/schermtest.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: schermtest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nieuwste Xcode kiezen
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Xcode-project genereren
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Simulator kiezen en starten
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          devices = json.load(sys.stdin)['devices']
+          iphones = [d for runtime, ds in devices.items() if 'iOS' in runtime for d in ds if d['name'].startswith('iPhone') and 'Pro' in d['name'] and 'Max' not in d['name']]
+          iphones = iphones or [d for runtime, ds in devices.items() if 'iOS' in runtime for d in ds if d['name'].startswith('iPhone')]
+          print(iphones[-1]['udid'])")
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl privacy "$UDID" grant microphone nl.rvrooijen.gespreksnotulen || true
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Schermtest draaien
+        run: |
+          set -o pipefail
+          mkdir -p schermafbeeldingen
+          TEST_RUNNER_SCREENSHOT_DIR="$PWD/schermafbeeldingen" xcodebuild \
+            -project Gespreksnotulen.xcodeproj \
+            -scheme Gespreksnotulen \
+            -destination "id=$UDID" \
+            -derivedDataPath build-ui \
+            -resultBundlePath ui-resultaat.xcresult \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            test 2>&1 | grep -E "Test (Case|Suite)|error:|failed|passed|XCTAssert|\*\*" | tail -n 200
+
+      - name: Schermafbeeldingen publiceren
+        if: always()
+        run: |
+          ls -la schermafbeeldingen || exit 0
+          cd schermafbeeldingen
+          git init -q -b schermafbeeldingen
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Schermafbeeldingen van ${{ github.sha }}" || exit 0
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" schermafbeeldingen
+
+      - name: Testresultaat bewaren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-resultaat
+          path: ui-resultaat.xcresult
+          retention-days: 7

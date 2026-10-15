@@ -45,6 +45,7 @@ struct ContentView: View {
                             NavigationLink(value: rec.id) {
                                 RecordingRow(recording: rec)
                             }
+                            .accessibilityIdentifier("opname-\(rec.title)")
                         }
                         .onDelete { offsets in
                             let items = filtered
@@ -54,13 +55,14 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Notulen")
-            .searchable(text: $searchText, prompt: "Zoek in gesprekken")
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Zoek in gesprekken")
             .navigationDestination(for: UUID.self) { id in
                 RecordingDetailView(recordingID: id)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
+                        .accessibilityLabel("Instellingen")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showImporter = true } label: { Image(systemName: "square.and.arrow.down") }

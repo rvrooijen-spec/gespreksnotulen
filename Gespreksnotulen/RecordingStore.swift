@@ -15,6 +15,31 @@ final class RecordingStore: ObservableObject {
 
     init() {
         load()
+        if ProcessInfo.processInfo.arguments.contains("-demoData"), recordings.isEmpty {
+            addDemoData()
+        }
+    }
+
+    /// Voorbeeldgesprekken voor de automatische schermtest (start met -demoData).
+    private func addDemoData() {
+        let lines: [(Int, Double, String)] = [
+            (1, 0, "Goedemorgen, fijn dat u er bent. Ik wil graag de badkamer laten verbouwen."),
+            (2, 5, "Dat kan zeker. Hoe groot is de ruimte ongeveer, en wilt u ook een nieuwe douche?"),
+            (1, 10, "Ongeveer zes vierkante meter. Ja, een inloopdouche en nieuwe tegels graag."),
+            (2, 15, "Prima, dan stuur ik u voor vrijdag een offerte met de materialen en de arbeid."),
+        ]
+        var done = makeNewRecording()
+        done.title = "Offertegesprek badkamer"
+        done.createdAt = Date().addingTimeInterval(-3600)
+        done.duration = 20
+        done.status = .done
+        done.utterances = lines.map { Utterance(speaker: $0.0, start: $0.1, end: $0.1 + 4.5, text: $0.2) }
+        save(done)
+
+        var pending = makeNewRecording()
+        pending.title = "Overleg aannemer"
+        pending.duration = 754
+        save(pending)
     }
 
     func folder(for recording: Recording) -> URL {

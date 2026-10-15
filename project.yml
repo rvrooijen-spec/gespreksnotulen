@@ -77,3 +77,31 @@ targets:
         SWIFT_VERSION: "5.0"
         CODE_SIGN_IDENTITY: "-"
         ENABLE_HARDENED_RUNTIME: NO
+
+  # Schermtest in de iPhone-simulator (zie .github/workflows/schermtest.yml).
+  NotulenUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+    dependencies:
+      - target: Gespreksnotulen
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: nl.rvrooijen.gespreksnotulen.uitests
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Gespreksnotulen
+
+schemes:
+  Gespreksnotulen:
+    build:
+      targets:
+        Gespreksnotulen: all
+    test:
+      targets:
+        - NotulenUITests
+  PipelineTest:
+    build:
+      targets:
+        PipelineTest: all

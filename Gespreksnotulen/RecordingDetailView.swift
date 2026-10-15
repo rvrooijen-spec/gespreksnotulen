@@ -107,6 +107,7 @@ struct RecordingDetailView: View {
                     Button("Verwijderen", systemImage: "trash", role: .destructive) { confirmDelete = true }
                 } label: {
                     Image(systemName: "ellipsis.circle")
+                        .accessibilityLabel("Meer")
                 }
             }
         }
