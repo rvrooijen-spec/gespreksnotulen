@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Koppel namen aan Spreker 1, 2, ... De eerste uitspraak van elke spreker
-/// staat erbij zodat je kunt horen/lezen wie het is.
+/// Koppel namen aan de stemmen. De eerste uitspraak van elke stem staat erbij
+/// zodat je kunt horen/lezen wie het is. Aangeven wie "ik" is, is verplicht.
 struct SpeakerNamesView: View {
     let recordingID: UUID
+    /// Verplicht invullen (na het uitschrijven): niet te annuleren zonder "Dit ben ik".
+    var required = false
 
     @EnvironmentObject private var store: RecordingStore
     @Environment(\.dismiss) private var dismiss
@@ -15,14 +17,36 @@ struct SpeakerNamesView: View {
         NavigationStack {
             Form {
                 if let rec = store.recording(withID: recordingID) {
+                    Section {
+                        Label {
+                            Text("Geef aan welke stem **jij** bent. Namen van anderen invullen mag, hoeft niet.")
+                        } icon: {
+                            Image(systemName: mySpeaker == nil ? "person.crop.circle.badge.questionmark" : "person.crop.circle.badge.checkmark")
+                                .foregroundStyle(mySpeaker == nil ? .orange : .green)
+                        }
+                        .font(.subheadline)
+                    }
                     ForEach(rec.speakers, id: \.self) { speaker in
                         Section {
-                            TextField("Spreker \(speaker)", text: binding(for: speaker))
+                            TextField(rec.defaultName(for: speaker, me: .some(mySpeaker)), text: binding(for: speaker))
                                 .textInputAutocapitalization(.words)
                                 .accessibilityIdentifier("naam-\(speaker)")
                             Toggle("Dit ben ik", isOn: Binding(
                                 get: { mySpeaker == speaker },
-                                set: { mySpeaker = $0 ? speaker : (mySpeaker == speaker ? nil : mySpeaker) }
+                                set: { isMe in
+                                    if isMe {
+                                        // Eigen naam van vorige keer alvast invullen.
+                                        if let previous = mySpeaker, names[previous] == UserSettings.myName {
+                                            names[previous] = nil
+                                        }
+                                        mySpeaker = speaker
+                                        if (names[speaker] ?? "").isEmpty, !UserSettings.myName.isEmpty {
+                                            names[speaker] = UserSettings.myName
+                                        }
+                                    } else if mySpeaker == speaker {
+                                        mySpeaker = nil
+                                    }
+                                }
                             ))
                             .accessibilityIdentifier("ik-\(speaker)")
                             if let first = rec.utterances.first(where: { $0.speaker == speaker }) {
@@ -37,25 +61,32 @@ struct SpeakerNamesView: View {
                                 }
                             }
                         } header: {
-                            Text("Spreker \(speaker)").foregroundStyle(SpeakerColors.color(for: speaker))
+                            Text("Stem \(speaker)").foregroundStyle(SpeakerColors.color(for: speaker))
                         }
                     }
                 }
             }
-            .navigationTitle("Sprekers")
+            .navigationTitle(required ? "Wie ben jij?" : "Sprekers")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuleer") { dismiss() }
+                if !required {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Annuleer") { dismiss() }
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Bewaar") {
+                        let cleaned = names.mapValues { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.value.isEmpty }
+                        if let me = mySpeaker, let myName = cleaned[me] {
+                            UserSettings.myName = myName
+                        }
                         store.update(recordingID) {
-                            $0.speakerNames = names
+                            $0.speakerNames = cleaned
                             $0.mySpeaker = mySpeaker
                         }
                         dismiss()
                     }
+                    .disabled(mySpeaker == nil)
                 }
             }
             .onAppear {
@@ -64,6 +95,7 @@ struct SpeakerNamesView: View {
             }
             .onDisappear { player.stop() }
         }
+        .interactiveDismissDisabled(required && mySpeaker == nil)
     }
 
     private func binding(for speaker: Int) -> Binding<String> {

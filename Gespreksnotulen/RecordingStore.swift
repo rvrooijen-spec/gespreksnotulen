@@ -41,6 +41,7 @@ final class RecordingStore: ObservableObject {
         long.createdAt = Date().addingTimeInterval(-7200)
         long.duration = 1800
         long.status = .done
+        long.mySpeaker = 1
         long.utterances = (0..<60).map { i in
             Utterance(
                 speaker: i % 2 + 1,
@@ -171,6 +172,24 @@ final class RecordingStore: ObservableObject {
         guard var rec = recording(withID: id) else { return }
         change(&rec)
         save(rec)
+    }
+
+    /// Kopie van het audiobestand met de naam van de opname, om te delen.
+    func namedAudioCopy(for recording: Recording) -> URL? {
+        let source = audioURL(for: recording)
+        let safeTitle = recording.title
+            .components(separatedBy: CharacterSet(charactersIn: "/\\:?%*|\"<>"))
+            .joined(separator: "-")
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("Delen", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let destination = folder.appendingPathComponent(safeTitle).appendingPathExtension(source.pathExtension)
+        try? FileManager.default.removeItem(at: destination)
+        do {
+            try FileManager.default.copyItem(at: source, to: destination)
+            return destination
+        } catch {
+            return nil
+        }
     }
 
     func delete(_ recording: Recording) {

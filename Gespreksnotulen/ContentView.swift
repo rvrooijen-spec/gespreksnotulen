@@ -12,6 +12,8 @@ struct ContentView: View {
     @State private var alertMessage: String?
     @State private var searchText = ""
     @State private var showImportHelp = false
+    @State private var renameID: UUID?
+    @State private var renameDraft = ""
 
     private var filtered: [Recording] {
         let query = searchText.trimmingCharacters(in: .whitespaces)
@@ -47,6 +49,13 @@ struct ContentView: View {
                                 RecordingRow(recording: rec)
                             }
                             .accessibilityIdentifier("opname-\(rec.title)")
+                            .swipeActions(edge: .leading) {
+                                Button("Naam", systemImage: "pencil") {
+                                    renameID = rec.id
+                                    renameDraft = rec.title
+                                }
+                                .tint(.gray)
+                            }
                         }
                         .onDelete { offsets in
                             let items = filtered
@@ -123,6 +132,15 @@ struct ContentView: View {
         .onOpenURL { url in
             importFile(url)
         }
+        .alert("Naam wijzigen", isPresented: Binding(get: { renameID != nil }, set: { if !$0 { renameID = nil } })) {
+            TextField("Naam", text: $renameDraft)
+            Button("Bewaar") {
+                let title = renameDraft.trimmingCharacters(in: .whitespaces)
+                if let id = renameID, !title.isEmpty { store.update(id) { $0.title = title } }
+                renameID = nil
+            }
+            Button("Annuleer", role: .cancel) { renameID = nil }
+        }
         .alert("Let op", isPresented: Binding(get: { alertMessage != nil }, set: { if !$0 { alertMessage = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -155,25 +173,35 @@ struct RecordingRow: View {
     @EnvironmentObject private var engine: TranscriptionEngine
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(recording.title).font(.headline)
-            HStack(spacing: 6) {
-                Text(recording.createdAt.formatted(date: .abbreviated, time: .shortened))
-                Text("·")
-                Text(Format.duration(recording.duration))
-                Spacer()
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(recording.title)
+                    .font(.headline)
+                    .lineLimit(2)
+                Spacer(minLength: 8)
                 statusLabel
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            Text("\(recording.createdAt.formatted(.dateTime.weekday(.wide).day().month(.wide).year().hour().minute())) · \(Format.duration(recording.duration))")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if recording.status == .done, !recording.speakers.isEmpty {
+                FlowLayout(spacing: 6) {
+                    ForEach(recording.speakerTags, id: \.speaker) { tag in
+                        SpeakerTag(name: tag.name, isMe: tag.isMe)
+                    }
+                }
+                .padding(.top, 2)
+            }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
     }
 
     @ViewBuilder private var statusLabel: some View {
         switch recording.status {
         case .done:
-            Label("\(recording.speakers.count)", systemImage: "person.2.fill")
+            EmptyView()
         case .processing:
             if engine.currentRecordingID == recording.id {
                 ProgressView().controlSize(.mini)
@@ -222,5 +250,66 @@ struct ModelBanner: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+/// Naam van een spreker als klein grijs label ("tag").
+struct SpeakerTag: View {
+    let name: String
+    var isMe = false
+
+    var body: some View {
+        HStack(spacing: 3) {
+            if isMe {
+                Image(systemName: "person.fill")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            Text(name)
+                .font(.caption2.weight(.semibold))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .foregroundStyle(.primary)
+        .background(Capsule().fill(Color(.systemGray5)))
+        .overlay(Capsule().strokeBorder(Color(.systemGray3), lineWidth: 0.5))
+        .accessibilityLabel(isMe ? "\(name) (ik)" : name)
+    }
+}
+
+/// Zet kinderen naast elkaar en gaat door op een nieuwe regel als het niet past.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, widest: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > maxWidth {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            widest = max(widest, x - spacing)
+        }
+        return CGSize(width: widest, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, rowHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > bounds.minX, x + size.width > bounds.maxX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            view.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }

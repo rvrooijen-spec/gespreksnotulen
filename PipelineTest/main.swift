@@ -110,7 +110,12 @@ do {
     var rec = Recording(title: "Test", createdAt: Date(), duration: 22, audioFileName: "audio.m4a")
     rec.utterances = merged
     rec.speakerNames = [1: "Jan", 2: "  "]
-    check(rec.name(for: 1) == "Jan" && rec.name(for: 2) == "Spreker 2" && rec.name(for: nil) == "Onbekend", "sprekernamen (lege naam valt terug op 'Spreker 2')")
+    check(rec.name(for: 1) == "Jan" && rec.name(for: 2) == "Persoon 2" && rec.name(for: nil) == "Onbekend", "sprekernamen (lege naam valt terug op 'Persoon 2')")
+    var other = rec
+    other.speakerNames = [:]
+    other.mySpeaker = 2
+    check(other.name(for: 2) == "Ik" && other.name(for: 1) == "Persoon 2", "zonder namen: ik = 'Ik', de ander = 'Persoon 2'")
+    check(other.speakerTags.first?.isMe == true, "eigen naam staat vooraan in de tags")
     check(rec.exportText.contains("[00:00] Jan: Hallo daar."), "export bevat tijd, naam en tekst")
     rec.mySpeaker = 1
     let decoded = try JSONDecoder().decode(Recording.self, from: JSONEncoder().encode(rec))

@@ -37,33 +37,65 @@ final class NotulenUITests: XCTestCase {
         XCTAssertTrue(app.buttons["opname-Overleg aannemer"].exists, "niet-uitgeschreven opname staat in de lijst")
         shot("01-lijst")
 
+        // Na openen moet je verplicht aangeven wie jij bent.
         row.tap()
-        XCTAssertTrue(app.staticTexts["Spreker 1"].firstMatch.waitForExistence(timeout: 5), "uitspraken met sprekers zichtbaar")
-        XCTAssertTrue(app.staticTexts["Spreker 2"].firstMatch.exists)
-        shot("02-gesprek")
-
-        app.buttons["Sprekers benoemen"].tap()
         let field1 = app.textFields["naam-1"]
-        XCTAssertTrue(field1.waitForExistence(timeout: 5), "naamveld voor spreker 1")
+        XCTAssertTrue(field1.waitForExistence(timeout: 5), "'Wie ben jij?' opent vanzelf")
+        let save = app.buttons["Bewaar"]
+        XCTAssertFalse(save.isEnabled, "bewaren kan pas na 'Dit ben ik'")
+        XCTAssertFalse(app.buttons["Annuleer"].exists, "verplicht: geen annuleerknop")
+        shot("02-wie-ben-jij")
+
         field1.tap()
         field1.typeText("Jan")
+        let me = app.switches["ik-1"]
+        me.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        XCTAssertEqual(me.value as? String, "1", "'Dit ben ik' staat aan bij stem 1")
+        XCTAssertTrue(save.isEnabled, "bewaren kan nu")
+        shot("03-sprekers-benoemen")
+        save.tap()
+
+        XCTAssertTrue(app.staticTexts["Jan"].firstMatch.waitForExistence(timeout: 5), "eigen naam bij de uitspraken")
+        XCTAssertTrue(app.staticTexts["Persoon 2"].firstMatch.exists, "de ander heet standaard 'Persoon 2'")
+        shot("04-gesprek-met-namen")
+
+        // Naam van de ander later alsnog invullen (vrijblijvend).
+        app.buttons["Sprekers benoemen"].tap()
         let field2 = app.textFields["naam-2"]
+        XCTAssertTrue(field2.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Annuleer"].exists, "na de eerste keer wel annuleren")
         field2.tap()
         field2.typeText("Petra")
-        let me = app.switches["ik-1"]
-        XCTAssertTrue(me.exists, "schakelaar 'Dit ben ik'")
-        me.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
-        XCTAssertEqual(me.value as? String, "1", "'Dit ben ik' staat aan bij spreker 1")
-        shot("03-sprekers-benoemen")
         app.buttons["Bewaar"].tap()
-
-        XCTAssertTrue(app.staticTexts["Jan"].firstMatch.waitForExistence(timeout: 5), "naam Jan staat bij de uitspraken")
-        XCTAssertTrue(app.staticTexts["Petra"].firstMatch.exists, "naam Petra staat bij de uitspraken")
-        XCTAssertFalse(app.staticTexts["Spreker 1"].exists, "'Spreker 1' is vervangen door de naam")
-        shot("04-gesprek-met-namen")
+        XCTAssertTrue(app.staticTexts["Petra"].firstMatch.waitForExistence(timeout: 5), "naam Petra bij de uitspraken")
 
         app.buttons["Meer"].firstMatch.tap()
         shot("05-menu")
+    }
+
+    func test8_LijstMetNaamtags() {
+        app.launch()
+        let row = app.buttons["opname-Offertegesprek badkamer"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15))
+        XCTAssertTrue(row.label.contains("Jan") && row.label.contains("Petra"), "namen als tags onder de titel: \(row.label)")
+        XCTAssertTrue(row.label.contains("oktober") || row.label.contains("okt") || row.label.contains("2026"), "datum onder de titel: \(row.label)")
+        shot("18-lijst-met-tags")
+    }
+
+    func test9_NaamWijzigen() {
+        app.launch()
+        let row = app.buttons["opname-Lang overleg"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15))
+        row.tap()
+        let titleButton = app.buttons["Naam wijzigen: Lang overleg"]
+        XCTAssertTrue(titleButton.waitForExistence(timeout: 5), "titel is aantikbaar")
+        titleButton.tap()
+        let field = app.alerts.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20) + "Teamoverleg november")
+        shot("19-naam-wijzigen")
+        app.alerts.buttons["Bewaar"].tap()
+        XCTAssertTrue(app.buttons["Naam wijzigen: Teamoverleg november"].waitForExistence(timeout: 5), "nieuwe naam opgeslagen")
     }
 
     func test5_DelenMetAI() {
@@ -73,6 +105,7 @@ final class NotulenUITests: XCTestCase {
         let row = app.buttons["opname-Offertegesprek badkamer"]
         XCTAssertTrue(row.waitForExistence(timeout: 15))
         row.tap()
+        answerWhoAmIIfAsked()
         XCTAssertTrue(app.buttons["Deel met AI"].firstMatch.waitForExistence(timeout: 5))
         shot("10-ai-stap1-gesprek")
 
@@ -109,6 +142,15 @@ final class NotulenUITests: XCTestCase {
         shot("15-ai-claude-geopend")
     }
 
+    /// Als "Wie ben jij?" nog verschijnt (bijv. als test 1 niet draaide): invullen.
+    private func answerWhoAmIIfAsked() {
+        let me = app.switches["ik-1"]
+        if me.waitForExistence(timeout: 3), app.buttons["Bewaar"].exists, !app.buttons["Annuleer"].exists {
+            me.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+            app.buttons["Bewaar"].tap()
+        }
+    }
+
     /// In de simulator staan de ChatGPT- en Claude-apps niet, dus opent Safari.
     /// Wachten tot die echt op de voorgrond staat en de pagina geladen is.
     private func waitForSafari() {
@@ -134,6 +176,7 @@ final class NotulenUITests: XCTestCase {
         let row = app.buttons["opname-Offertegesprek badkamer"]
         XCTAssertTrue(row.waitForExistence(timeout: 15))
         row.tap()
+        answerWhoAmIIfAsked()
         app.buttons["Deel met AI"].firstMatch.tap()
         app.buttons["Deel als tekstbestand"].tap()
         XCTAssertTrue(app.buttons["Notulen maken"].waitForExistence(timeout: 5))

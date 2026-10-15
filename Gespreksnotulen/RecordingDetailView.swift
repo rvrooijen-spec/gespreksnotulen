@@ -29,6 +29,21 @@ struct RecordingDetailView: View {
     private func content(_ rec: Recording) -> some View {
         List {
             Section {
+                Button {
+                    titleDraft = rec.title
+                    editingTitle = true
+                } label: {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(rec.title)
+                            .font(.title3.bold())
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.leading)
+                        Spacer()
+                        Image(systemName: "pencil")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityLabel("Naam wijzigen: \(rec.title)")
                 VStack(alignment: .leading, spacing: 4) {
                     Text(rec.createdAt.formatted(date: .complete, time: .shortened))
                     Text(Format.duration(rec.duration))
@@ -94,8 +109,10 @@ struct RecordingDetailView: View {
                             UIPasteboard.general.string = rec.exportText
                         }
                     }
-                    ShareLink(item: store.audioURL(for: rec)) {
-                        Label("Deel audio", systemImage: "waveform")
+                    Button("Deel audio", systemImage: "waveform") {
+                        if let url = store.namedAudioCopy(for: rec) {
+                            ShareSheet.present([url])
+                        }
                     }
                     Menu("Opnieuw uitschrijven", systemImage: "arrow.clockwise") {
                         Button("Aantal sprekers automatisch") { reprocess(rec, speakers: nil) }
@@ -113,8 +130,10 @@ struct RecordingDetailView: View {
             }
         }
         .sheet(isPresented: $showSpeakers) {
-            SpeakerNamesView(recordingID: rec.id)
+            SpeakerNamesView(recordingID: rec.id, required: rec.mySpeaker == nil)
         }
+        .onAppear { askWhoIAmIfNeeded(rec) }
+        .onChange(of: rec.status) { askWhoIAmIfNeeded(rec) }
         .alert("Naam wijzigen", isPresented: $editingTitle) {
             TextField("Naam", text: $titleDraft)
             Button("Bewaar") {
@@ -129,6 +148,13 @@ struct RecordingDetailView: View {
                 store.delete(rec)
                 dismiss()
             }
+        }
+    }
+
+    /// Na het uitschrijven moet de gebruiker aangeven welke stem hij/zij is.
+    private func askWhoIAmIfNeeded(_ rec: Recording) {
+        if rec.status == .done, rec.mySpeaker == nil, !rec.speakers.isEmpty, !showSpeakers {
+            showSpeakers = true
         }
     }
 

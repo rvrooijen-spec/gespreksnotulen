@@ -42,7 +42,29 @@ struct Recording: Codable, Identifiable, Hashable {
         if let name = speakerNames[speaker], !name.trimmingCharacters(in: .whitespaces).isEmpty {
             return name
         }
-        return "Spreker \(speaker)"
+        return defaultName(for: speaker)
+    }
+
+    /// Standaardnaam zolang de gebruiker niets invult: "Ik" voor de gebruiker zelf,
+    /// de anderen "Persoon 2", "Persoon 3", ... (op volgorde van eerste keer spreken).
+    func defaultName(for speaker: Int, me: Int?? = nil) -> String {
+        let me = me ?? mySpeaker
+        if speaker == me { return "Ik" }
+        guard let me else { return "Persoon \(speaker)" }
+        let others = speakers.filter { $0 != me }
+        return "Persoon \((others.firstIndex(of: speaker) ?? 0) + 2)"
+    }
+
+    /// Namen van alle sprekers, de gebruiker zelf eerst (voor de tags in de lijst).
+    var speakerTags: [(speaker: Int, name: String, isMe: Bool)] {
+        speakers
+            .sorted { a, b in
+                if a == b { return false }
+                if a == mySpeaker { return true }
+                if b == mySpeaker { return false }
+                return a < b
+            }
+            .map { ($0, name(for: $0), $0 == mySpeaker) }
     }
 
     /// Het volledige gesprek als platte tekst, om te delen of op te slaan.
@@ -70,5 +92,16 @@ enum Format {
         if seconds < 60 { return "\(Int(seconds)) sec" }
         if minutes < 60 { return "\(minutes) min" }
         return "\(minutes / 60) u \(minutes % 60) min"
+    }
+}
+
+/// Instellingen die voor alle opnames gelden.
+enum UserSettings {
+    private static let myNameKey = "mijnNaam"
+
+    /// De naam van de gebruiker, automatisch ingevuld bij "Dit ben ik".
+    static var myName: String {
+        get { UserDefaults.standard.string(forKey: myNameKey) ?? "" }
+        set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespaces), forKey: myNameKey) }
     }
 }
