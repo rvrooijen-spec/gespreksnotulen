@@ -104,6 +104,18 @@ final class NotulenUITests: XCTestCase {
         shot("15-ai-claude-geopend")
     }
 
+    func test6_Importeren() {
+        app.launch()
+        let button = app.buttons["Gesprek importeren"]
+        XCTAssertTrue(button.waitForExistence(timeout: 15), "grijze importknop boven opnemen")
+        XCTAssertTrue(app.buttons["Opnemen"].exists)
+        XCTAssertLessThan(button.frame.minY, app.buttons["Opnemen"].frame.minY, "importknop staat boven de opnameknop")
+        button.tap()
+        XCTAssertTrue(app.buttons["Open Dictafoon"].waitForExistence(timeout: 5), "uitleg Dictafoon")
+        XCTAssertTrue(app.buttons["Kies een audiobestand"].exists, "optie Bestanden")
+        shot("16-importeren")
+    }
+
     func test2_Zoeken() {
         app.launch()
         let search = app.searchFields.firstMatch

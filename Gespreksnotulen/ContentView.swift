@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var path: [UUID] = []
     @State private var alertMessage: String?
     @State private var searchText = ""
+    @State private var showImportHelp = false
 
     private var filtered: [Recording] {
         let query = searchText.trimmingCharacters(in: .whitespaces)
@@ -64,22 +65,32 @@ struct ContentView: View {
                     Button { showSettings = true } label: { Image(systemName: "gearshape") }
                         .accessibilityLabel("Instellingen")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showImporter = true } label: { Image(systemName: "square.and.arrow.down") }
-                        .accessibilityLabel("Audiobestand importeren")
-                }
             }
             .safeAreaInset(edge: .bottom) {
-                Button {
-                    showRecorder = true
-                } label: {
-                    Label("Opnemen", systemImage: "mic.fill")
-                        .font(.title3.bold())
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                VStack(spacing: 10) {
+                    Button {
+                        showImportHelp = true
+                    } label: {
+                        Label("Gesprek importeren", systemImage: "square.and.arrow.down")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.gray)
+                    .foregroundStyle(.primary)
+
+                    Button {
+                        showRecorder = true
+                    } label: {
+                        Label("Opnemen", systemImage: "mic.fill")
+                            .font(.title3.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
                 .padding(.horizontal)
                 .padding(.bottom, 8)
             }
@@ -91,6 +102,14 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
+        }
+        .sheet(isPresented: $showImportHelp) {
+            ImportView {
+                showImportHelp = false
+                // Even wachten tot het blad dicht is, anders opent de bestandskiezer niet.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { showImporter = true }
+            }
+            .presentationDetents([.medium, .large])
         }
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.audio]) { result in
             switch result {
