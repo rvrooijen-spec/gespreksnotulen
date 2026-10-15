@@ -10,6 +10,17 @@ struct ContentView: View {
     @State private var showImporter = false
     @State private var path: [UUID] = []
     @State private var alertMessage: String?
+    @State private var searchText = ""
+
+    private var filtered: [Recording] {
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return store.recordings }
+        return store.recordings.filter { rec in
+            rec.title.localizedCaseInsensitiveContains(query)
+                || rec.speakerNames.values.contains { $0.localizedCaseInsensitiveContains(query) }
+                || rec.utterances.contains { $0.text.localizedCaseInsensitiveContains(query) }
+        }
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -30,18 +41,20 @@ struct ContentView: View {
                     }
                 } else {
                     Section {
-                        ForEach(store.recordings) { rec in
+                        ForEach(filtered) { rec in
                             NavigationLink(value: rec.id) {
                                 RecordingRow(recording: rec)
                             }
                         }
                         .onDelete { offsets in
-                            for index in offsets { store.delete(store.recordings[index]) }
+                            let items = filtered
+                            for index in offsets { store.delete(items[index]) }
                         }
                     }
                 }
             }
             .navigationTitle("Notulen")
+            .searchable(text: $searchText, prompt: "Zoek in gesprekken")
             .navigationDestination(for: UUID.self) { id in
                 RecordingDetailView(recordingID: id)
             }

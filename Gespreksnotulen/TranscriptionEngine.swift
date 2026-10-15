@@ -1,11 +1,9 @@
 import Foundation
 import UIKit
-import WhisperKit
-import SpeakerKit
+import AVFoundation
 
-/// Zet opnames om naar tekst (WhisperKit) en bepaalt wie wat zei (SpeakerKit).
-/// Alles draait op de iPhone zelf; alleen het eenmalig downloaden van de modellen
-/// gebruikt internet.
+/// Beheert de wachtrij van opnames die uitgeschreven moeten worden en vertaalt
+/// de voortgang van `TranscriptionPipeline` naar de UI.
 @MainActor
 final class TranscriptionEngine: ObservableObject {
     enum ModelState: Equatable {
@@ -16,122 +14,90 @@ final class TranscriptionEngine: ObservableObject {
         case failed(String)
     }
 
-    /// Nauwkeurigste meertalige model dat Argmax aanraadt voor iPhone (~630 MB).
-    static let whisperModel = "large-v3-v20240930_626MB"
-
     @Published private(set) var modelState: ModelState = .notDownloaded
     @Published private(set) var currentRecordingID: UUID?
     @Published private(set) var phase = ""
     @Published private(set) var progress: Double?
 
-    private var whisperKit: WhisperKit?
-    private var speakerKit: SpeakerKit?
+    private let pipeline: TranscriptionPipeline
+    private let keepAlive = BackgroundKeepAlive()
     private var queue: [UUID] = []
     private var isWorking = false
+    private var suspendCount = 0
+    private let cancelFlag = CancelFlag()
+    private var wentToBackgroundDuringJob = false
     private weak var store: RecordingStore?
 
-    private let modelsURL: URL = {
+    init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let url = support.appendingPathComponent("Modellen", isDirectory: true)
-        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        var modelsURL = support.appendingPathComponent("Modellen", isDirectory: true)
+        try? FileManager.default.createDirectory(at: modelsURL, withIntermediateDirectories: true)
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
-        var mutable = url
-        try? mutable.setResourceValues(values)
-        return url
-    }()
+        try? modelsURL.setResourceValues(values)
+        pipeline = TranscriptionPipeline(modelsURL: modelsURL)
 
-    private let whisperFolderKey = "whisperModelFolder"
-
-    /// Pad van het gedownloade Whisper-model, relatief t.o.v. de modellenmap
-    /// (het absolute pad van de app-container kan veranderen na herinstallatie).
-    private var whisperFolder: URL? {
-        guard let relative = UserDefaults.standard.string(forKey: whisperFolderKey) else { return nil }
-        let url = modelsURL.appendingPathComponent(relative, isDirectory: true)
-        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                if self?.isWorking == true { self?.wentToBackgroundDuringJob = true }
+            }
+        }
+        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.processPending() }
+        }
     }
 
-    var modelsDownloaded: Bool { whisperFolder != nil }
+    var modelsDownloaded: Bool { pipeline.whisperFolder != nil }
 
     func attach(store: RecordingStore) {
         self.store = store
         if modelsDownloaded, modelState == .notDownloaded {
             modelState = .ready
         }
+        processPending()
     }
 
     // MARK: - Modellen
 
     func downloadModels() async {
-        if case .downloading = modelState { return }
+        switch modelState {
+        case .downloading, .loading: return
+        default: break
+        }
         do {
-            try await ensureModels()
+            try await prepareModels()
+            processPending()
         } catch {
             modelState = .failed(error.localizedDescription)
         }
     }
 
-    private func ensureModels() async throws {
-        if whisperKit != nil, speakerKit != nil {
+    private func prepareModels() async throws {
+        if pipeline.isLoaded {
             modelState = .ready
             return
         }
-
-        var folder = whisperFolder
-        if folder == nil {
-            modelState = .downloading("Spraakmodel downloaden", 0)
-            let downloaded = try await WhisperKit.download(
-                variant: Self.whisperModel,
-                downloadBase: modelsURL
-            ) { progress in
-                let fraction = progress.fractionCompleted
-                Task { @MainActor [weak self] in
+        try await pipeline.prepare { status in
+            Task { @MainActor [weak self] in
+                switch status {
+                case .downloadingSpeech(let fraction):
                     self?.modelState = .downloading("Spraakmodel downloaden", fraction)
+                case .downloadingSpeakers:
+                    self?.modelState = .downloading("Sprekermodel downloaden", nil)
+                case .loading:
+                    self?.modelState = .loading
                 }
             }
-            // Alleen het deel na ".../Modellen/" bewaren (iOS wisselt soms /var en /private/var).
-            let components = downloaded.standardizedFileURL.pathComponents
-            if let index = components.lastIndex(of: modelsURL.lastPathComponent) {
-                let relative = components[(index + 1)...].joined(separator: "/")
-                UserDefaults.standard.set(relative, forKey: whisperFolderKey)
-            }
-            folder = downloaded
-        }
-
-        if speakerKit == nil {
-            modelState = .downloading("Sprekermodel downloaden", nil)
-            let config = PyannoteConfig(downloadBase: modelsURL.path, verbose: false)
-            let kit = try await SpeakerKit(config)
-            try await kit.ensureModelsLoaded()
-            speakerKit = kit
-        }
-
-        if whisperKit == nil, let folder {
-            modelState = .loading
-            let config = WhisperKitConfig(
-                downloadBase: modelsURL,
-                modelFolder: folder.path,
-                verbose: false,
-                prewarm: true,
-                load: true,
-                download: false
-            )
-            whisperKit = try await WhisperKit(config)
         }
         modelState = .ready
     }
 
     func deleteModels() async {
-        whisperKit = nil
-        await speakerKit?.unloadModels()
-        speakerKit = nil
-        UserDefaults.standard.removeObject(forKey: whisperFolderKey)
-        try? FileManager.default.removeItem(at: modelsURL)
-        try? FileManager.default.createDirectory(at: modelsURL, withIntermediateDirectories: true)
+        await pipeline.deleteModels()
         modelState = .notDownloaded
     }
 
-    // MARK: - Verwerken
+    // MARK: - Wachtrij
 
     func isQueued(_ id: UUID) -> Bool {
         currentRecordingID == id || queue.contains(id)
@@ -147,122 +113,196 @@ final class TranscriptionEngine: ObservableObject {
         Task { await processQueue() }
     }
 
+    /// Zet alle nog niet uitgeschreven opnames in de wachtrij (bijv. opnames die
+    /// gemaakt zijn voordat de modellen gedownload waren).
+    func processPending() {
+        guard modelsDownloaded, let store else { return }
+        for rec in store.recordings.reversed() where rec.status == .recorded {
+            enqueue(rec)
+        }
+    }
+
+    /// Pauzeert het uitschrijven, bijv. tijdens een nieuwe opname: zo concurreren
+    /// opnemen en rekenen niet om geheugen en kan een crash geen opname kosten.
+    func suspend() {
+        suspendCount += 1
+        if let current = currentRecordingID {
+            cancelFlag.set(true)
+            // Na het afbreken opnieuw vooraan in de wachtrij.
+            if !queue.contains(current) { queue.insert(current, at: 0) }
+        }
+    }
+
+    func resume() {
+        suspendCount = max(0, suspendCount - 1)
+        if suspendCount == 0 {
+            Task { await processQueue() }
+        }
+    }
+
     private func processQueue() async {
-        guard !isWorking else { return }
+        guard !isWorking, suspendCount == 0, !queue.isEmpty else { return }
         isWorking = true
+        cancelFlag.set(false)
+        wentToBackgroundDuringJob = false
         UIApplication.shared.isIdleTimerDisabled = true
+        keepAlive.start()
         let backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Uitschrijven")
         defer {
             isWorking = false
             currentRecordingID = nil
             phase = ""
             progress = nil
+            keepAlive.stop()
             UIApplication.shared.isIdleTimerDisabled = false
             UIApplication.shared.endBackgroundTask(backgroundTask)
         }
 
-        while !queue.isEmpty {
+        while !queue.isEmpty, suspendCount == 0 {
             let id = queue.removeFirst()
             guard let store, let recording = store.recording(withID: id) else { continue }
             currentRecordingID = id
+            cancelFlag.set(false)
             do {
-                let utterances = try await transcribe(recording, audioURL: store.audioURL(for: recording))
+                phase = "Modellen voorbereiden"
+                progress = nil
+                try await prepareModels()
+                let utterances = try await run(recording, audioURL: store.audioURL(for: recording))
                 store.update(id) {
                     $0.utterances = utterances
                     $0.status = .done
                     $0.errorMessage = nil
                 }
+            } catch is CancellationError {
+                // Gepauzeerd voor een opname: staat al opnieuw in de wachtrij.
+                store.update(id) { $0.status = .processing }
             } catch {
-                store.update(id) {
-                    $0.status = .failed
-                    $0.errorMessage = error.localizedDescription
+                if case .failed = modelState {} else if !pipeline.isLoaded {
+                    modelState = .failed(error.localizedDescription)
+                }
+                if wentToBackgroundDuringJob {
+                    // iOS kan rekenwerk weigeren als de app op de achtergrond staat;
+                    // dan opnieuw proberen zodra de app weer open is.
+                    store.update(id) {
+                        $0.status = .recorded
+                        $0.errorMessage = nil
+                    }
+                } else {
+                    store.update(id) {
+                        $0.status = .failed
+                        $0.errorMessage = error.localizedDescription
+                    }
                 }
             }
         }
     }
 
-    private func transcribe(_ recording: Recording, audioURL: URL) async throws -> [Utterance] {
-        phase = "Modellen voorbereiden"
-        progress = nil
-        try await ensureModels()
-        guard let whisperKit, let speakerKit else {
-            throw NSError(domain: "Notulen", code: 2, userInfo: [NSLocalizedDescriptionKey: "Modellen zijn niet geladen."])
-        }
-
-        phase = "Audio inladen"
+    private func run(_ recording: Recording, audioURL: URL) async throws -> [Utterance] {
         let path = audioURL.path
-        let audio = try await Task.detached(priority: .userInitiated) {
-            try AudioProcessor.loadAudioAsFloatArray(fromPath: path)
+        let expected = recording.expectedSpeakers
+        let flag = cancelFlag
+        let pipeline = pipeline
+        let throttle = ProgressThrottle()
+        return try await Task.detached(priority: .userInitiated) {
+            try await pipeline.transcribe(
+                audioPath: path,
+                expectedSpeakers: expected,
+                phase: { phase in
+                    guard throttle.shouldReport(phase) else { return }
+                    Task { @MainActor [weak self] in self?.show(phase) }
+                },
+                shouldContinue: { !flag.value }
+            )
         }.value
-        guard !audio.isEmpty else {
-            throw NSError(domain: "Notulen", code: 3, userInfo: [NSLocalizedDescriptionKey: "De opname is leeg."])
-        }
-
-        // 1. Tekst
-        phase = "Tekst uitschrijven"
-        progress = 0
-        let decodeOptions = DecodingOptions(
-            task: .transcribe,
-            language: "nl",
-            temperatureFallbackCount: 3,
-            usePrefillPrompt: true,
-            detectLanguage: false,
-            skipSpecialTokens: true,
-            wordTimestamps: true,
-            chunkingStrategy: .vad
-        )
-        let progressTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                self?.progress = whisperKit.progress.fractionCompleted
-                try? await Task.sleep(for: .milliseconds(500))
-            }
-        }
-        defer { progressTask.cancel() }
-        let transcription = try await whisperKit.transcribe(audioArray: audio, decodeOptions: decodeOptions)
-        progressTask.cancel()
-
-        // 2. Sprekers
-        phase = "Sprekers herkennen"
-        progress = 0
-        let diarizeOptions = PyannoteDiarizationOptions(numberOfSpeakers: recording.expectedSpeakers)
-        let diarization = try await speakerKit.diarize(audioArray: audio, options: diarizeOptions) { p in
-            let fraction = p.fractionCompleted
-            Task { @MainActor [weak self] in self?.progress = fraction }
-        }
-
-        // 3. Samenvoegen
-        phase = "Samenvoegen"
-        progress = nil
-        let segments = diarization.addSpeakerInfo(to: transcription).flatMap { $0 }
-        return Self.makeUtterances(from: segments)
     }
 
-    /// Voegt opeenvolgende stukjes van dezelfde spreker samen en nummert de
-    /// sprekers op volgorde van eerste keer spreken (Spreker 1, 2, ...).
-    private static func makeUtterances(from segments: [SpeakerSegment]) -> [Utterance] {
-        var numbering: [Int: Int] = [:]
-        var result: [Utterance] = []
-
-        for segment in segments {
-            let text = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { continue }
-
-            var speaker: Int?
-            if let rawID = segment.speaker.speakerId ?? segment.speaker.speakerIds.first {
-                if numbering[rawID] == nil { numbering[rawID] = numbering.count + 1 }
-                speaker = numbering[rawID]
-            }
-            let start = Double(segment.speakerWords.first?.wordTiming.start ?? segment.startTime)
-            let end = Double(segment.speakerWords.last?.wordTiming.end ?? segment.endTime)
-
-            if var last = result.last, last.speaker == speaker, start - last.end < 3 {
-                last.text += " " + text
-                last.end = end
-                result[result.count - 1] = last
-            } else {
-                result.append(Utterance(speaker: speaker, start: start, end: end, text: text))
-            }
+    private func show(_ phase: TranscriptionPipeline.Phase) {
+        switch phase {
+        case .loadingAudio:
+            self.phase = "Audio inladen"
+            progress = nil
+        case .transcribing(let fraction):
+            self.phase = "Tekst uitschrijven"
+            progress = fraction
+        case .diarizing(let fraction):
+            self.phase = "Sprekers herkennen"
+            progress = fraction
+        case .merging:
+            self.phase = "Samenvoegen"
+            progress = nil
         }
-        return result
+    }
+}
+
+/// Thread-veilige vlag om een lopende verwerking af te breken.
+final class CancelFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var flag = false
+    var value: Bool { lock.lock(); defer { lock.unlock() }; return flag }
+    func set(_ newValue: Bool) { lock.lock(); flag = newValue; lock.unlock() }
+}
+
+/// Voorkomt dat elke token een UI-update veroorzaakt.
+final class ProgressThrottle: @unchecked Sendable {
+    private let lock = NSLock()
+    private var last = Date.distantPast
+
+    func shouldReport(_ phase: TranscriptionPipeline.Phase) -> Bool {
+        switch phase {
+        case .transcribing, .diarizing:
+            lock.lock(); defer { lock.unlock() }
+            let now = Date()
+            guard now.timeIntervalSince(last) > 0.3 else { return false }
+            last = now
+            return true
+        default:
+            return true
+        }
+    }
+}
+
+/// Speelt stilte af zolang er wordt uitgeschreven, zodat iOS de app niet
+/// pauzeert als het scherm uitgaat (de app heeft de achtergrondmodus "audio").
+/// Mengt met andere audio, dus muziek of podcasts van de gebruiker blijven spelen.
+@MainActor
+final class BackgroundKeepAlive {
+    private var player: AVAudioPlayer?
+
+    func start() {
+        guard player == nil else { return }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setActive(true)
+            let player = try AVAudioPlayer(data: Self.silentWAV())
+            player.numberOfLoops = -1
+            player.volume = 0
+            player.play()
+            self.player = player
+        } catch {
+            player = nil
+        }
+    }
+
+    func stop() {
+        player?.stop()
+        player = nil
+    }
+
+    /// Eén seconde stilte als WAV (8 kHz, 16-bit mono).
+    private static func silentWAV() -> Data {
+        let sampleRate: UInt32 = 8_000
+        let dataSize = sampleRate * 2
+        var data = Data()
+        func append<T: FixedWidthInteger>(_ value: T) {
+            withUnsafeBytes(of: value.littleEndian) { data.append(contentsOf: $0) }
+        }
+        data.append(contentsOf: Array("RIFF".utf8)); append(UInt32(36 + dataSize))
+        data.append(contentsOf: Array("WAVE".utf8))
+        data.append(contentsOf: Array("fmt ".utf8)); append(UInt32(16)); append(UInt16(1)); append(UInt16(1))
+        append(sampleRate); append(sampleRate * 2); append(UInt16(2)); append(UInt16(16))
+        data.append(contentsOf: Array("data".utf8)); append(dataSize)
+        data.append(Data(count: Int(dataSize)))
+        return data
     }
 }

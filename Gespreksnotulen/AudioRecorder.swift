@@ -22,14 +22,13 @@ final class AudioRecorder: NSObject, ObservableObject {
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
         try session.setActive(true)
+        // Altijd de microfoon van de iPhone zelf (niet die van een headset of
+        // auto), die vangt een gesprek in een ruimte het best op.
+        if let builtIn = session.availableInputs?.first(where: { $0.portType == .builtInMic }) {
+            try? session.setPreferredInput(builtIn)
+        }
 
-        let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 16_000,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
-        ]
-        let recorder = try AVAudioRecorder(url: url, settings: settings)
+        let recorder = try AVAudioRecorder(url: url, settings: AudioFiles.recordingSettings)
         recorder.isMeteringEnabled = true
         guard recorder.record() else {
             throw NSError(domain: "Notulen", code: 1, userInfo: [NSLocalizedDescriptionKey: "Opnemen kon niet starten."])

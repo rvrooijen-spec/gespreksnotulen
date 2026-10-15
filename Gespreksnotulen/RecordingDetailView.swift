@@ -93,6 +93,9 @@ struct RecordingDetailView: View {
                             UIPasteboard.general.string = rec.exportText
                         }
                     }
+                    ShareLink(item: store.audioURL(for: rec)) {
+                        Label("Deel audio", systemImage: "waveform")
+                    }
                     Menu("Opnieuw uitschrijven", systemImage: "arrow.clockwise") {
                         Button("Aantal sprekers automatisch") { reprocess(rec, speakers: nil) }
                         ForEach(2...6, id: \.self) { n in
@@ -172,7 +175,7 @@ struct ProcessingStatus: View {
                 } else {
                     ProgressView()
                 }
-                Text("Houd de app open; dit duurt ongeveer een kwart van de gespreksduur.")
+                Text("Dit kan even duren bij een lang gesprek. Je mag het scherm vergrendelen; wissel liever niet naar zware apps.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {

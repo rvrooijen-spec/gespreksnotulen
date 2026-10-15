@@ -7,7 +7,11 @@ iPhone-app die gesprekken opneemt, ze **op de iPhone zelf** in het Nederlands ui
 - Sprekers herkennen met Pyannote (SpeakerKit) en namen geven aan Spreker 1, 2, ...
 - Tik op een uitspraak om die terug te luisteren
 - Delen of kopiëren als tekst; opnames staan ook in de Bestanden-app
-- Bestaande audiobestanden importeren (Dictafoon, WhatsApp-spraakberichten, ...)
+- Bestaande audiobestanden importeren (Dictafoon, m4a/mp3/wav)
+- Zoeken in alle gesprekken
+- Crashbestendig: er wordt opgenomen in CAF (blijft leesbaar na een crash) en daarna
+  automatisch gecomprimeerd naar m4a; tijdens een opname pauzeert het uitschrijven
+- Uitschrijven gaat door met het scherm uit; lukt het toch niet, dan opnieuw zodra de app open is
 
 ## Hoe de app gebouwd wordt
 
@@ -16,6 +20,14 @@ Er is geen Mac nodig. Bij elke push naar `main` bouwt GitHub Actions de app op e
 **Releases → laatste** (en als artefact bij de workflow-run).
 
 Het Xcode-project wordt gegenereerd uit `project.yml` met [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+
+## Automatische test
+
+`.github/workflows/test.yml` (**Spraaktest**) maakt met de Nederlandse stemmen van macOS een
+testgesprek tussen twee sprekers (`PipelineTest/dialoog.json`) en haalt dat door exact dezelfde
+rekenkern als de app (`TranscriptionPipeline.swift`): modellen downloaden, uitschrijven, sprekers
+herkennen, samenvoegen, comprimeren en afbreken. De test draait vanzelf als die code verandert,
+of handmatig via Actions → Spraaktest → Run workflow.
 
 ## Installeren op je iPhone (Windows-pc)
 
@@ -41,4 +53,4 @@ ook als de app een keer verloopt: gewoon opnieuw verlengen.
 ## Eerste gebruik
 
 Open de app en tik op **Nu downloaden** (ca. 700 MB, eenmalig, bij voorkeur op wifi).
-Daarna werkt alles offline. Uitschrijven duurt ongeveer een kwart van de gespreksduur; houd de app daarbij open.
+Daarna werkt alles offline. Opnames die je maakt voordat de modellen er zijn, worden daarna vanzelf uitgeschreven.

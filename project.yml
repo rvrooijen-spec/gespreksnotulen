@@ -43,3 +43,25 @@ targets:
         SWIFT_VERSION: "5.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+  # Test van de rekenkern op een Mac (zie .github/workflows/test.yml).
+  PipelineTest:
+    type: tool
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - PipelineTest/main.swift
+      - Gespreksnotulen/TranscriptionPipeline.swift
+      - Gespreksnotulen/AudioFiles.swift
+      - Gespreksnotulen/Models.swift
+    dependencies:
+      - package: argmax-oss-swift
+        product: WhisperKit
+      - package: argmax-oss-swift
+        product: SpeakerKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: nl.rvrooijen.pipelinetest
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: NO

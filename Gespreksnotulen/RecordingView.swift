@@ -12,6 +12,7 @@ struct RecordingView: View {
     @State private var recording: Recording?
     @State private var errorMessage: String?
     @State private var confirmCancel = false
+    @State private var suspendedEngine = false
 
     var body: some View {
         VStack(spacing: 32) {
@@ -75,6 +76,14 @@ struct RecordingView: View {
             Button("Doorgaan met opnemen", role: .cancel) {}
         }
         .interactiveDismissDisabled()
+        .onDisappear {
+            // Vangnet: als het scherm op een andere manier sluit.
+            if recorder.isRecording, var rec = recording {
+                rec.duration = recorder.stop()
+                store.save(rec)
+            }
+            releaseEngine()
+        }
     }
 
     private var statusText: String {
@@ -84,16 +93,19 @@ struct RecordingView: View {
     }
 
     private func begin() async {
-        guard recording == nil else { return }
+        guard recording == nil, !suspendedEngine else { return }
+        engine.suspend()
+        suspendedEngine = true
         guard await AudioRecorder.requestPermission() else {
             errorMessage = "Geen toegang tot de microfoon. Zet dit aan via Instellingen > Notulen."
             return
         }
-        let rec = store.makeNewRecording()
+        let rec = store.startNewRecording()
         do {
             try recorder.start(to: store.audioURL(for: rec))
             recording = rec
         } catch {
+            store.delete(rec)
             errorMessage = error.localizedDescription
         }
     }
@@ -102,17 +114,31 @@ struct RecordingView: View {
         guard var rec = recording else { return }
         rec.duration = recorder.stop()
         store.save(rec)
-        if engine.modelsDownloaded {
-            engine.enqueue(rec)
-        }
         dismiss()
         onFinished(rec)
+        let store = store
+        let engine = engine
+        Task {
+            // Eerst comprimeren, daarna pas uitschrijven weer toestaan.
+            let compressed = await store.compressAudio(of: rec)
+            engine.resume()
+            if engine.modelsDownloaded { engine.enqueue(compressed) }
+        }
+        suspendedEngine = false
     }
 
     private func cancel() {
         if recorder.isRecording { recorder.stop() }
         if let rec = recording { store.delete(rec) }
+        releaseEngine()
         dismiss()
+    }
+
+    private func releaseEngine() {
+        if suspendedEngine {
+            engine.resume()
+            suspendedEngine = false
+        }
     }
 }
 
