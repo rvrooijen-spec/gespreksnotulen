@@ -39,46 +39,49 @@ enum AITask: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Deze taak deelt alleen wat de gebruiker zelf zei.
-    var onlyMySpeaker: Bool { self == .myBusinessPart }
+    /// Voor deze taak moet bekend zijn welke spreker de gebruiker is.
+    var needsMySpeaker: Bool { self == .myBusinessPart }
 
-    var instruction: String? {
+    /// De opdracht voor de AI. De app voegt alleen deze opdracht toe; het gesprek
+    /// zelf wordt altijd volledig en ongewijzigd meegestuurd.
+    func instruction(for recording: Recording) -> String? {
+        let intro = "Hieronder staat een volledig uitgeschreven Nederlands gesprek (automatisch gemaakt, er kunnen fouten in zitten)."
         switch self {
         case .summary:
             return """
-            Hieronder staat een uitgeschreven Nederlands gesprek (automatisch gemaakt, er kunnen fouten in zitten). \
-            Geef een korte samenvatting in het Nederlands, gevolgd door een lijst met actiepunten \
+            \(intro) Geef een korte samenvatting in het Nederlands, gevolgd door een lijst met actiepunten \
             (wie doet wat, en voor wanneer als dat genoemd is) en eventuele afspraken, bedragen en data.
             """
         case .minutes:
             return """
-            Hieronder staat een uitgeschreven Nederlands gesprek (automatisch gemaakt, er kunnen fouten in zitten). \
-            Maak er nette notulen van in het Nederlands met de kopjes: Aanwezigen, Besproken punten, \
+            \(intro) Maak er nette notulen van in het Nederlands met de kopjes: Aanwezigen, Besproken punten, \
             Besluiten en Actiepunten (met wie en wanneer).
             """
         case .myBusinessPart:
+            let me = recording.name(for: recording.mySpeaker)
             return """
-            Hieronder staan uitsluitend mijn eigen uitspraken uit een werkgesprek met een medewerker \
-            (automatisch uitgeschreven, er kunnen fouten in zitten). Maak hiervan een kort, zakelijk verslag \
-            in het Nederlands over het functioneren van de medewerker, met de kopjes: Functioneren en resultaten, \
+            \(intro) Het is een werkgesprek tussen mij en een medewerker. Ik ben "\(me)" in de tekst.
+            Maak een kort, zakelijk verslag in het Nederlands over het functioneren van de medewerker, \
+            uitsluitend gebaseerd op wat ik ("\(me)") heb gezegd, met de kopjes: Functioneren en resultaten, \
             Gedrag en samenwerking, Afspraken en verbeterpunten, Vervolg.
             Strikte regels:
+            - Gebruik alleen mijn eigen uitspraken; de uitspraken van anderen dienen alleen als context.
             - Alleen inhoudelijke, zakelijke punten over werk en functioneren.
             - Laat alles weg wat privé is: gezondheid, ziekte, familie, relaties, financiën, \
             religie en andere persoonlijke omstandigheden, ook als ik het zelf noemde.
             - Laat small talk, grapjes en randzaken weg.
             - Geen citaten of namen van derden; feitelijk en neutraal geformuleerd.
-            - Voeg niets toe dat niet in de tekst staat.
+            - Voeg niets toe dat niet in het gesprek staat.
             """
         case .textOnly:
             return nil
         }
     }
 
+    /// Opdracht (indien van toepassing) + het volledige, ongewijzigde gesprek.
     func message(for recording: Recording) -> String {
-        let text = onlyMySpeaker ? recording.exportText(onlySpeaker: recording.mySpeaker) : recording.exportText
-        guard let instruction else { return text }
-        return instruction + "\n\n---\n\n" + text
+        guard let instruction = instruction(for: recording) else { return recording.exportText }
+        return instruction + "\n\n---\n\n" + recording.exportText
     }
 }
 
@@ -101,7 +104,7 @@ struct AIShareMenu: View {
                 Menu("Deel met \(assistant.rawValue)") {
                     ForEach(AITask.allCases) { task in
                         Button(task.rawValue, systemImage: task.systemImage) {
-                            if task.onlyMySpeaker, recording.mySpeaker == nil {
+                            if task.needsMySpeaker, recording.mySpeaker == nil {
                                 needsMySpeaker = true
                             } else {
                                 share(task.message(for: recording), with: assistant)
@@ -115,7 +118,7 @@ struct AIShareMenu: View {
             Menu("Deel als tekstbestand") {
                 ForEach(AITask.allCases) { task in
                     Button(task.rawValue, systemImage: task.systemImage) {
-                        if task.onlyMySpeaker, recording.mySpeaker == nil {
+                        if task.needsMySpeaker, recording.mySpeaker == nil {
                             needsMySpeaker = true
                         } else {
                             fileToShare = SharedFile.make(for: recording, task: task)
@@ -148,7 +151,7 @@ struct AIShareMenu: View {
             Button("Sprekers openen") { onChooseSpeakers() }
             Button("Annuleer", role: .cancel) {}
         } message: {
-            Text("Zet bij jouw spreker 'Dit ben ik' aan. Dan deelt de app alleen jouw eigen uitspraken.")
+            Text("Zet bij jouw spreker 'Dit ben ik' aan. Het hele gesprek wordt gedeeld; de AI krijgt de opdracht alleen jouw uitspraken te gebruiken.")
         }
     }
 

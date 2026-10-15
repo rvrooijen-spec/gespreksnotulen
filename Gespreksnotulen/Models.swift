@@ -45,13 +45,10 @@ struct Recording: Codable, Identifiable, Hashable {
         return "Spreker \(speaker)"
     }
 
-    /// Platte tekst om te delen of op te slaan.
-    var exportText: String { exportText(onlySpeaker: nil) }
-
-    /// Platte tekst; met `onlySpeaker` alleen de uitspraken van die spreker.
-    func exportText(onlySpeaker: Int?) -> String {
+    /// Het volledige gesprek als platte tekst, om te delen of op te slaan.
+    var exportText: String {
         var lines = [title, "\(createdAt.formatted(date: .long, time: .shortened)) · \(Format.duration(duration))", ""]
-        for u in utterances where onlySpeaker == nil || u.speaker == onlySpeaker {
+        for u in utterances {
             lines.append("[\(Format.timestamp(u.start))] \(name(for: u.speaker)): \(u.text)")
             lines.append("")
         }

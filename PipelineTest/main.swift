@@ -76,8 +76,6 @@ do {
     rec.speakerNames = [1: "Jan", 2: "  "]
     check(rec.name(for: 1) == "Jan" && rec.name(for: 2) == "Spreker 2" && rec.name(for: nil) == "Onbekend", "sprekernamen (lege naam valt terug op 'Spreker 2')")
     check(rec.exportText.contains("[00:00] Jan: Hallo daar."), "export bevat tijd, naam en tekst")
-    let onlyMe = rec.exportText(onlySpeaker: 1)
-    check(onlyMe.contains("Hallo daar.") && !onlyMe.contains("Goedemiddag."), "'alleen mijn inbreng' laat de ander weg")
     rec.mySpeaker = 1
     let decoded = try JSONDecoder().decode(Recording.self, from: JSONEncoder().encode(rec))
     check(decoded == rec, "opname overleeft opslaan en inladen (JSON)")
