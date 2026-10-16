@@ -18,7 +18,7 @@ KEY = os.environ.get("ASSEMBLYAI_API_KEY", "").strip()
 # Nieuwste modellen eerst; AssemblyAI valt terug op het volgende als het eerste
 # geen Nederlands ondersteunt. Werkt een combinatie niet, dan proberen we de volgende.
 ATTEMPTS = [
-    {"speech_models": ["universal-3.5-pro", "universal-2"]},
+    {"speech_models": ["universal-3-5-pro", "universal-2"]},
     {"speech_models": ["universal-3-pro", "universal-2"]},
     {"speech_models": ["universal-2"]},
     {},

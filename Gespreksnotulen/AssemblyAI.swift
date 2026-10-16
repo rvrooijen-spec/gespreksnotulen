@@ -21,7 +21,7 @@ struct AssemblyAIClient: Sendable {
     /// volgende model als het eerste geen Nederlands kan. Wordt een combinatie
     /// helemaal geweigerd, dan proberen we de volgende.
     private static let modelAttempts: [[String]?] = [
-        ["universal-3.5-pro", "universal-2"],
+        ["universal-3-5-pro", "universal-2"],
         ["universal-3-pro", "universal-2"],
         ["universal-2"],
         nil,
