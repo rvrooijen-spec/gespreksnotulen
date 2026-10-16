@@ -2,24 +2,15 @@ import Foundation
 import UIKit
 import AVFoundation
 
-/// Beheert de wachtrij van opnames die uitgeschreven moeten worden en vertaalt
-/// de voortgang van `TranscriptionPipeline` naar de UI.
+/// Beheert de wachtrij van opnames die uitgeschreven moeten worden (via
+/// AssemblyAI) en vertaalt de voortgang naar de UI.
 @MainActor
 final class TranscriptionEngine: ObservableObject {
-    enum ModelState: Equatable {
-        case notDownloaded
-        case downloading(String, Double?)   // omschrijving, voortgang 0...1
-        case loading
-        case ready
-        case failed(String)
-    }
-
-    @Published private(set) var modelState: ModelState = .notDownloaded
+    @Published private(set) var hasAPIKey = KeychainStore.read() != nil
     @Published private(set) var currentRecordingID: UUID?
     @Published private(set) var phase = ""
     @Published private(set) var progress: Double?
 
-    private let pipeline: TranscriptionPipeline
     private let keepAlive = BackgroundKeepAlive()
     private var queue: [UUID] = []
     private var isWorking = false
@@ -29,14 +20,6 @@ final class TranscriptionEngine: ObservableObject {
     private weak var store: RecordingStore?
 
     init() {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        var modelsURL = support.appendingPathComponent("Modellen", isDirectory: true)
-        try? FileManager.default.createDirectory(at: modelsURL, withIntermediateDirectories: true)
-        var values = URLResourceValues()
-        values.isExcludedFromBackup = true
-        try? modelsURL.setResourceValues(values)
-        pipeline = TranscriptionPipeline(modelsURL: modelsURL)
-
         NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
                 if self?.isWorking == true { self?.wentToBackgroundDuringJob = true }
@@ -47,54 +30,29 @@ final class TranscriptionEngine: ObservableObject {
         }
     }
 
-    var modelsDownloaded: Bool { pipeline.whisperFolder != nil }
+    /// Klaar om uit te schrijven (er is een API-sleutel).
+    var isReady: Bool { hasAPIKey }
 
     func attach(store: RecordingStore) {
         self.store = store
-        if modelsDownloaded, modelState == .notDownloaded {
-            modelState = .ready
-        }
         processPending()
     }
 
-    // MARK: - Modellen
+    // MARK: - API-sleutel
 
-    func downloadModels() async {
-        switch modelState {
-        case .downloading, .loading: return
-        default: break
-        }
-        do {
-            try await prepareModels()
-            processPending()
-        } catch {
-            modelState = .failed(error.localizedDescription)
-        }
+    /// Controleert de sleutel bij AssemblyAI en bewaart hem in de sleutelhanger.
+    func setAPIKey(_ key: String) async throws {
+        let key = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { throw AssemblyAIClient.APIError(message: "Vul een API-sleutel in.") }
+        try await AssemblyAIClient(apiKey: key).validateKey()
+        KeychainStore.save(key)
+        hasAPIKey = true
+        processPending()
     }
 
-    private func prepareModels() async throws {
-        if pipeline.isLoaded {
-            modelState = .ready
-            return
-        }
-        try await pipeline.prepare { status in
-            Task { @MainActor [weak self] in
-                switch status {
-                case .downloadingSpeech(let fraction):
-                    self?.modelState = .downloading("Spraakmodel downloaden", fraction)
-                case .downloadingSpeakers:
-                    self?.modelState = .downloading("Sprekermodel downloaden", nil)
-                case .loading:
-                    self?.modelState = .loading
-                }
-            }
-        }
-        modelState = .ready
-    }
-
-    func deleteModels() async {
-        await pipeline.deleteModels()
-        modelState = .notDownloaded
+    func removeAPIKey() {
+        KeychainStore.delete()
+        hasAPIKey = false
     }
 
     // MARK: - Wachtrij
@@ -114,16 +72,15 @@ final class TranscriptionEngine: ObservableObject {
     }
 
     /// Zet alle nog niet uitgeschreven opnames in de wachtrij (bijv. opnames die
-    /// gemaakt zijn voordat de modellen gedownload waren).
+    /// gemaakt zijn zonder internet of voordat de API-sleutel was ingevuld).
     func processPending() {
-        guard modelsDownloaded, let store else { return }
+        guard isReady, let store else { return }
         for rec in store.recordings.reversed() where rec.status == .recorded {
             enqueue(rec)
         }
     }
 
-    /// Pauzeert het uitschrijven, bijv. tijdens een nieuwe opname: zo concurreren
-    /// opnemen en rekenen niet om geheugen en kan een crash geen opname kosten.
+    /// Pauzeert het uitschrijven tijdens een nieuwe opname (de opname heeft voorrang).
     func suspend() {
         suspendCount += 1
         if let current = currentRecordingID {
@@ -164,9 +121,6 @@ final class TranscriptionEngine: ObservableObject {
             currentRecordingID = id
             cancelFlag.set(false)
             do {
-                phase = "Modellen voorbereiden"
-                progress = nil
-                try await prepareModels()
                 let utterances = try await run(recording, audioURL: store.audioURL(for: recording))
                 store.update(id) {
                     $0.utterances = utterances
@@ -177,12 +131,9 @@ final class TranscriptionEngine: ObservableObject {
                 // Gepauzeerd voor een opname: staat al opnieuw in de wachtrij.
                 store.update(id) { $0.status = .processing }
             } catch {
-                if case .failed = modelState {} else if !pipeline.isLoaded {
-                    modelState = .failed(error.localizedDescription)
-                }
-                if wentToBackgroundDuringJob {
-                    // iOS kan rekenwerk weigeren als de app op de achtergrond staat;
-                    // dan opnieuw proberen zodra de app weer open is.
+                if wentToBackgroundDuringJob || Self.isConnectionProblem(error) {
+                    // Geen internet of de app werd gepauzeerd: opnieuw proberen
+                    // zodra de app weer open is.
                     store.update(id) {
                         $0.status = .recorded
                         $0.errorMessage = nil
@@ -198,39 +149,32 @@ final class TranscriptionEngine: ObservableObject {
     }
 
     private func run(_ recording: Recording, audioURL: URL) async throws -> [Utterance] {
-        let path = audioURL.path
+        guard let key = KeychainStore.read() else {
+            throw AssemblyAIClient.APIError(message: "Vul eerst je AssemblyAI API-sleutel in bij Instellingen.")
+        }
+        let client = AssemblyAIClient(apiKey: key)
         let expected = recording.expectedSpeakers
         let flag = cancelFlag
-        let pipeline = pipeline
-        let throttle = ProgressThrottle()
-        return try await Task.detached(priority: .userInitiated) {
-            try await pipeline.transcribe(
-                audioPath: path,
-                expectedSpeakers: expected,
-                phase: { phase in
-                    guard throttle.shouldReport(phase) else { return }
-                    Task { @MainActor [weak self] in self?.show(phase) }
-                },
-                shouldContinue: { !flag.value }
-            )
-        }.value
+        return try await client.transcribe(
+            fileURL: audioURL,
+            expectedSpeakers: expected,
+            phase: { phase in
+                Task { @MainActor [weak self] in
+                    switch phase {
+                    case .uploading: self?.phase = "Uploaden naar AssemblyAI"
+                    case .transcribing: self?.phase = "Uitschrijven bij AssemblyAI"
+                    }
+                    self?.progress = nil
+                }
+            },
+            shouldContinue: { !flag.value }
+        )
     }
 
-    private func show(_ phase: TranscriptionPipeline.Phase) {
-        switch phase {
-        case .loadingAudio:
-            self.phase = "Audio inladen"
-            progress = nil
-        case .transcribing(let fraction):
-            self.phase = "Tekst uitschrijven"
-            progress = fraction
-        case .diarizing(let fraction):
-            self.phase = "Sprekers herkennen"
-            progress = fraction
-        case .merging:
-            self.phase = "Samenvoegen"
-            progress = nil
-        }
+    private static func isConnectionProblem(_ error: Error) -> Bool {
+        guard let urlError = error as? URLError else { return false }
+        return [.notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost, .dataNotAllowed]
+            .contains(urlError.code)
     }
 }
 
@@ -242,27 +186,9 @@ final class CancelFlag: @unchecked Sendable {
     func set(_ newValue: Bool) { lock.lock(); flag = newValue; lock.unlock() }
 }
 
-/// Voorkomt dat elke token een UI-update veroorzaakt.
-final class ProgressThrottle: @unchecked Sendable {
-    private let lock = NSLock()
-    private var last = Date.distantPast
-
-    func shouldReport(_ phase: TranscriptionPipeline.Phase) -> Bool {
-        switch phase {
-        case .transcribing, .diarizing:
-            lock.lock(); defer { lock.unlock() }
-            let now = Date()
-            guard now.timeIntervalSince(last) > 0.3 else { return false }
-            last = now
-            return true
-        default:
-            return true
-        }
-    }
-}
-
 /// Speelt stilte af zolang er wordt uitgeschreven, zodat iOS de app niet
-/// pauzeert als het scherm uitgaat (de app heeft de achtergrondmodus "audio").
+/// pauzeert als het scherm uitgaat terwijl er nog wordt geüpload of gewacht
+/// (de app heeft de achtergrondmodus "audio").
 /// Mengt met andere audio, dus muziek of podcasts van de gebruiker blijven spelen.
 @MainActor
 final class BackgroundKeepAlive {

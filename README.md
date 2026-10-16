@@ -1,17 +1,17 @@
 # Notulen
 
-iPhone-app die gesprekken opneemt, ze **op de iPhone zelf** in het Nederlands uitschrijft en herkent wie wat zegt.
+iPhone-app die gesprekken opneemt en ze via **AssemblyAI** (EU-server) in het Nederlands uitschrijft, met wie wat zegt.
 
 - Opnemen, ook met het scherm uit
-- Uitschrijven met Whisper large-v3 turbo (WhisperKit), offline
-- Sprekers herkennen met Pyannote (SpeakerKit) en namen geven aan Spreker 1, 2, ...
+- Uitschrijven en sprekers herkennen met AssemblyAI (EU-endpoint, `api.eu.assemblyai.com`)
+- Verplicht aangeven wie "ik" ben; anderen heten standaard Persoon 2, 3, ... (aanpasbaar)
 - Tik op een uitspraak om die terug te luisteren
 - Delen of kopiëren als tekst; opnames staan ook in de Bestanden-app
 - Opnames uit Dictafoon (ook van de Apple Watch) via **Deel → Notulen**, of importeren (m4a/mp3/wav)
 - Zoeken in alle gesprekken
 - Crashbestendig: er wordt opgenomen in CAF (blijft leesbaar na een crash) en daarna
   automatisch gecomprimeerd naar m4a; tijdens een opname pauzeert het uitschrijven
-- Uitschrijven gaat door met het scherm uit; lukt het toch niet, dan opnieuw zodra de app open is
+- Uitschrijven gaat door met het scherm uit; zonder internet opnieuw zodra de app weer open is
 
 ## Hoe de app gebouwd wordt
 
@@ -21,13 +21,13 @@ Er is geen Mac nodig. Bij elke push naar `main` bouwt GitHub Actions de app op e
 
 Het Xcode-project wordt gegenereerd uit `project.yml` met [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
-## Automatische test
+## Automatische tests
 
-`.github/workflows/test.yml` (**Spraaktest**) maakt met de Nederlandse stemmen van macOS een
-testgesprek tussen twee sprekers (`PipelineTest/dialoog.json`) en haalt dat door exact dezelfde
-rekenkern als de app (`TranscriptionPipeline.swift`): modellen downloaden, uitschrijven, sprekers
-herkennen, samenvoegen, comprimeren en afbreken. De test draait vanzelf als die code verandert,
-of handmatig via Actions → Spraaktest → Run workflow.
+- **Schermtest** (`.github/workflows/schermtest.yml`): opent de app in de iPhone-simulator met voorbeeldgesprekken,
+  tikt alle schermen door en zet schermafbeeldingen op de branch `schermafbeeldingen`.
+- **Transcribeer testopnames** (`.github/workflows/transcribeer.yml`): zet een audiobestand in `testopnames/`
+  en het wordt via AssemblyAI uitgeschreven; resultaat op de branch `transcripties`.
+  Vereist de repository secret `ASSEMBLYAI_API_KEY`.
 
 ## Installeren op je iPhone (Windows-pc)
 
@@ -52,5 +52,6 @@ ook als de app een keer verloopt: gewoon opnieuw verlengen.
 
 ## Eerste gebruik
 
-Open de app en tik op **Nu downloaden** (ca. 700 MB, eenmalig, bij voorkeur op wifi).
-Daarna werkt alles offline. Opnames die je maakt voordat de modellen er zijn, worden daarna vanzelf uitgeschreven.
+Open de app, tik op het tandwiel en plak je **AssemblyAI API-sleutel** (assemblyai.com › Dashboard).
+De sleutel wordt in de sleutelhanger van de iPhone bewaard. Opnames die je maakt zonder sleutel of zonder internet
+worden daarna vanzelf uitgeschreven.

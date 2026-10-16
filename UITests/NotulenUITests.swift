@@ -203,7 +203,7 @@ final class NotulenUITests: XCTestCase {
         let button = app.buttons["Instellingen"]
         XCTAssertTrue(button.waitForExistence(timeout: 15))
         button.tap()
-        XCTAssertTrue(app.staticTexts["Spraakmodellen nodig"].waitForExistence(timeout: 5), "modelstatus zichtbaar")
+        XCTAssertTrue(app.secureTextFields["api-sleutel"].waitForExistence(timeout: 5), "veld voor AssemblyAI-sleutel zichtbaar")
         shot("07-instellingen")
         app.buttons["Klaar"].tap()
     }

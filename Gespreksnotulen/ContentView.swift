@@ -28,7 +28,7 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
-                if !engine.modelsDownloaded || isDownloading {
+                if !engine.isReady {
                     Section {
                         ModelBanner()
                     }
@@ -152,7 +152,7 @@ struct ContentView: View {
         Task {
             do {
                 let rec = try await store.importAudio(from: url)
-                if engine.modelsDownloaded { engine.enqueue(rec) }
+                if engine.isReady { engine.enqueue(rec) }
                 path = [rec.id]
             } catch {
                 alertMessage = "Importeren mislukt: \(error.localizedDescription)"
@@ -160,12 +160,6 @@ struct ContentView: View {
         }
     }
 
-    private var isDownloading: Bool {
-        switch engine.modelState {
-        case .downloading, .loading, .failed: return true
-        default: return false
-        }
-    }
 }
 
 struct RecordingRow: View {
@@ -216,40 +210,25 @@ struct RecordingRow: View {
     }
 }
 
+/// Melding zolang er geen AssemblyAI API-sleutel is ingevuld.
 struct ModelBanner: View {
     @EnvironmentObject private var engine: TranscriptionEngine
+    @State private var showSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            switch engine.modelState {
-            case .notDownloaded:
-                Text("Spraakmodellen nodig").font(.headline)
-                Text("Om gesprekken op je iPhone zelf uit te schrijven zijn eenmalig ca. 700 MB aan modellen nodig. Gebruik bij voorkeur wifi.")
+            if engine.isReady {
+                Label("Klaar om uit te schrijven", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+            } else {
+                Text("AssemblyAI-sleutel nodig").font(.headline)
+                Text("Gesprekken worden uitgeschreven door AssemblyAI (EU). Vul eenmalig je API-sleutel in.")
                     .font(.subheadline).foregroundStyle(.secondary)
-                Button("Nu downloaden") { Task { await engine.downloadModels() } }
+                Button("Sleutel invullen") { showSettings = true }
                     .buttonStyle(.bordered)
-            case .downloading(let what, let fraction):
-                Text(what + "…").font(.headline)
-                if let fraction {
-                    ProgressView(value: fraction)
-                    Text("\(Int(fraction * 100))% – houd de app open").font(.caption).foregroundStyle(.secondary)
-                } else {
-                    ProgressView()
-                }
-            case .loading:
-                Text("Modellen laden…").font(.headline)
-                Text("De eerste keer kan dit een paar minuten duren.").font(.caption).foregroundStyle(.secondary)
-                ProgressView()
-            case .failed(let message):
-                Text("Downloaden mislukt").font(.headline)
-                Text(message).font(.caption).foregroundStyle(.secondary)
-                Button("Opnieuw proberen") { Task { await engine.downloadModels() } }
-                    .buttonStyle(.bordered)
-            case .ready:
-                Label("Modellen klaar", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
             }
         }
         .padding(.vertical, 4)
+        .sheet(isPresented: $showSettings) { SettingsView() }
     }
 }
 

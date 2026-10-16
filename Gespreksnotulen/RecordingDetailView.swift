@@ -59,7 +59,7 @@ struct RecordingDetailView: View {
                 Section { ProcessingStatus(recordingID: rec.id) }
             case .recorded:
                 Section {
-                    if engine.modelsDownloaded {
+                    if engine.isReady {
                         Button("Uitschrijven") { engine.enqueue(rec) }
                     } else {
                         ModelBanner()
@@ -120,7 +120,7 @@ struct RecordingDetailView: View {
                             Button("\(n) sprekers") { reprocess(rec, speakers: n) }
                         }
                     }
-                    .disabled(!engine.modelsDownloaded || engine.isQueued(rec.id))
+                    .disabled(!engine.isReady || engine.isQueued(rec.id))
                     Divider()
                     Button("Verwijderen", systemImage: "trash", role: .destructive) { confirmDelete = true }
                 } label: {

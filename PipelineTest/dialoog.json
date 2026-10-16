@@ -1,8 +1,0 @@
-[
-  {"voice": "A", "keyword": "badkamer", "text": "Goedemorgen, fijn dat u er bent. Ik wil graag de badkamer laten verbouwen."},
-  {"voice": "B", "keyword": "douche", "text": "Dat kan zeker. Hoe groot is de ruimte ongeveer, en wilt u ook een nieuwe douche?"},
-  {"voice": "A", "keyword": "tegels", "text": "Ongeveer zes vierkante meter. Ja, een inloopdouche en nieuwe tegels graag."},
-  {"voice": "B", "keyword": "offerte", "text": "Prima. Dan stuur ik u voor vrijdag een offerte met de materialen en de arbeid."},
-  {"voice": "A", "keyword": "klus", "text": "Hoe lang duurt de klus ongeveer, denkt u?"},
-  {"voice": "B", "keyword": "november", "text": "Reken op twee weken. We kunnen beginnen in de eerste week van november."}
-]

@@ -122,7 +122,7 @@ struct RecordingView: View {
             // Eerst comprimeren, daarna pas uitschrijven weer toestaan.
             let compressed = await store.compressAudio(of: rec)
             engine.resume()
-            if engine.modelsDownloaded { engine.enqueue(compressed) }
+            if engine.isReady { engine.enqueue(compressed) }
         }
         suspendedEngine = false
     }

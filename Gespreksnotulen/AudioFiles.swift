@@ -1,7 +1,7 @@
 import Foundation
 import AVFoundation
 
-/// Hulpfuncties voor audiobestanden, zonder UI-code (ook gebruikt in PipelineTest).
+/// Hulpfuncties voor audiobestanden (opnemen en comprimeren).
 enum AudioFiles {
     /// Opname-instellingen: 16 kHz mono 16-bit PCM in een CAF-bestand. CAF blijft
     /// leesbaar als de app tijdens het opnemen crasht; na afloop comprimeren we naar AAC.
