@@ -42,6 +42,7 @@ Variabelen kies je door in een veld te tikken en boven het toetsenbord de naam t
 
 ```
 1  Tekst   <plak hier je AssemblyAI-sleutel>                     (Text)
+────────────────────────────────────────────────────────────
 2  Stel variabele in  Sleutel  op  [Tekst]                       (Set Variable)
 ```
 
@@ -53,6 +54,7 @@ Variabelen kies je door in een veld te tikken en boven het toetsenbord de naam t
        tik op ›:  Methode: POST
        Headers: + Nieuwe header  →  authorization  =  [Sleutel]
        Hoofdtekst verzoek: Bestand  →  [Opdrachtinvoer]
+────────────────────────────────────────────────────────────
 4  Haal woordenboekwaarde op  Waarde  voor  upload_url  in  [Inhoud van URL]   (Get Dictionary Value)
 ```
 
@@ -69,9 +71,13 @@ Variabelen kies je door in een veld te tikken en boven het toetsenbord de naam t
           speaker_labels  Booleaanse waarde  Waar
           speech_models   Array              →  Tekst  universal-3-5-pro
                                              →  Tekst  universal-2
+────────────────────────────────────────────────────────────
 6  Haal woordenboekwaarde op  Waarde  voor  id  in  [Inhoud van URL]
+────────────────────────────────────────────────────────────
 7  Stel variabele in  ID  op  [Woordenboekwaarde]
+────────────────────────────────────────────────────────────
 8  Tekst   queued
+────────────────────────────────────────────────────────────
 9  Stel variabele in  Status  op  [Tekst]
 ```
 Let op: precies `universal-3-5-pro` met streepjes.
@@ -80,17 +86,27 @@ Let op: precies `universal-3-5-pro` met streepjes.
 
 ```
 10 Herhaal  200  keer                                            (Repeat)
+────────────────────────────────────────────────────────────
 11     Als  [Status]  is niet  completed
+────────────────────────────────────────────────────────────
 12         Als  [Status]  is niet  error
+────────────────────────────────────────────────────────────
 13             Wacht  3  seconden                                (Wait)
+────────────────────────────────────────────────────────────
 14             Haal inhoud van URL op
                    URL: https://api.eu.assemblyai.com/v2/transcript/[ID]
                    Methode: GET  ·  Headers: authorization = [Sleutel]
+────────────────────────────────────────────────────────────
 15             Stel variabele in  Resultaat  op  [Inhoud van URL]
+────────────────────────────────────────────────────────────
 16             Haal woordenboekwaarde op  Waarde  voor  status  in  [Resultaat]
+────────────────────────────────────────────────────────────
 17             Stel variabele in  Status  op  [Woordenboekwaarde]
+────────────────────────────────────────────────────────────
 18         Einde als
+────────────────────────────────────────────────────────────
 19     Einde als
+────────────────────────────────────────────────────────────
 20 Einde herhaal
 ```
 Opdrachten heeft geen "herhaal tot klaar". Na `completed` slaat hij de resterende rondes in een flits over.
@@ -100,12 +116,19 @@ Maximaal wachten: 200 × 3 s = 10 minuten.
 
 ```
 21 Haal woordenboekwaarde op  Waarde  voor  utterances  in  [Resultaat]
+────────────────────────────────────────────────────────────
 22 Herhaal met elk  [Woordenboekwaarde]                          (Repeat with Each)
+────────────────────────────────────────────────────────────
 23     Haal woordenboekwaarde op  Waarde  voor  speaker  in  [Herhaalonderdeel]
+────────────────────────────────────────────────────────────
 24     Stel variabele in  Spreker  op  [Woordenboekwaarde]
+────────────────────────────────────────────────────────────
 25     Haal woordenboekwaarde op  Waarde  voor  text  in  [Herhaalonderdeel]
+────────────────────────────────────────────────────────────
 26     Tekst   Spreker [Spreker]: [Woordenboekwaarde]
+────────────────────────────────────────────────────────────
 27 Einde herhaal
+────────────────────────────────────────────────────────────
 28 Combineer  [Herhaalresultaten]  met  Nieuwe regel             (Combine Text)
 ```
 Bij 26 typ je `Spreker ` en `: ` zelf; **[Spreker]** is de variabele, **[Woordenboekwaarde]** de uitkomst van 25.
@@ -114,11 +137,14 @@ Bij 26 typ je `Spreker ` en `: ` zelf; **[Spreker]** is de variabele, **[Woorden
 
 ```
 29 Haal naam op  [Opdrachtinvoer]                                (Get Name)
+────────────────────────────────────────────────────────────
 30 Tekst
        [Naam] – [Huidige datum]
 
        [Gecombineerde tekst]
+────────────────────────────────────────────────────────────
 31 Maak notitie aan  met  [Tekst]                                (Create Note)
+────────────────────────────────────────────────────────────
 32 Toon notitie  [Notitie]                                       (Show Note)
 ```
 Bij 30: tik op **[Huidige datum]** → kies datumnotatie **Lang** en tijd **Kort**.
