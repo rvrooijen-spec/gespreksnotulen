@@ -1,7 +1,7 @@
 # Opdracht "Gesprek uitschrijven" – eenvoudige versie
 
 Een iPhone-opdracht (Shortcut) die een Dictafoon-opname laat uitschrijven door **AssemblyAI (EU-server)**
-en het resultaat als notitie in **Notities** zet. Zo kort mogelijk gehouden: 32 acties.
+en het resultaat als notitie in **Notities** zet. Zo kort mogelijk gehouden: 28 acties.
 Werkt dit, dan breiden we hem uit (tijden, namen, delen met ChatGPT/Claude).
 
 Uitkomst in Notities:
@@ -31,127 +31,308 @@ Werkt ook voor opnames van je Apple Watch: die staan vanzelf in Dictafoon op de 
 4. Bovenaan staat nu **Ontvang … uit Deelmenu**. Tik op het eerste woord en laat alleen **Media** en
    **Bestanden** aangevinkt. Zet **Als er geen invoer is** op **Stop**.
 
-Variabelen kies je door in een veld te tikken en boven het toetsenbord de naam te kiezen
-(of **Variabele selecteren**). Hieronder staan ze als **[Naam]**. Inspringen = binnen een Als/Herhaal-blok.
-
 ---
 
 ## De acties
 
+**Zo lees je dit:**
+- Een grijs blok = tekst die je **kopieert en plakt**, precies zoals hij is.
+- **🔵 Variabele** = die kun je niet plakken. Tik in het veld en kies hem in de balk boven het toetsenbord
+  (of tik op het veld → **Selecteer variabele**). Vaak staat de juiste al ingevuld.
+- **Einde als** en **Einde herhaal** komen er automatisch bij; die voeg je niet zelf toe.
+  Sleep de acties die "binnen" horen tussen **Als** en **Einde als**.
+
+---
+
 ### 1. Sleutel
 
+**Actie 1 – Tekst** (Text)
+Plak je eigen AssemblyAI-sleutel in het tekstvak.
+
+---
+
+**Actie 2 – Stel variabele in** (Set Variable)
+Variabelenaam:
 ```
-1  Tekst   <plak hier je AssemblyAI-sleutel>                     (Text)
-────────────────────────────────────────────────────────────
-2  Stel variabele in  Sleutel  op  [Tekst]                       (Set Variable)
+Sleutel
 ```
+Invoer: 🔵 **Tekst**
+
+---
 
 ### 2. Uploaden
 
+**Actie 3 – Haal inhoud van URL op** (Get Contents of URL)
+URL:
 ```
-3  Haal inhoud van URL op                                        (Get Contents of URL)
-       URL:  https://api.eu.assemblyai.com/v2/upload
-       tik op ›:  Methode: POST
-       Headers: + Nieuwe header  →  authorization  =  [Sleutel]
-       Hoofdtekst verzoek: Bestand  →  [Opdrachtinvoer]
-────────────────────────────────────────────────────────────
-4  Haal woordenboekwaarde op  Waarde  voor  upload_url  in  [Inhoud van URL]   (Get Dictionary Value)
+https://api.eu.assemblyai.com/v2/upload
 ```
+Tik op **›** (meer opties):
+- Methode: **POST**
+- Headers → **Voeg nieuwe header toe** → sleutel:
+  ```
+  authorization
+  ```
+  waarde: 🔵 **Sleutel**
+- Hoofdtekst verzoek: **Bestand** → bestand: 🔵 **Opdrachtinvoer**
+
+---
+
+**Actie 4 – Haal woordenboekwaarde op** (Get Dictionary Value)
+Haal **Waarde** op voor sleutel:
+```
+upload_url
+```
+in: 🔵 **Inhoud van URL**
+
+---
 
 ### 3. Uitschrijven starten
 
+**Actie 5 – Haal inhoud van URL op**
+URL:
 ```
-5  Haal inhoud van URL op
-       URL:  https://api.eu.assemblyai.com/v2/transcript
-       Methode: POST
-       Headers: authorization = [Sleutel]
-       Hoofdtekst verzoek: JSON  (+ Nieuw veld):
-          audio_url       Tekst              [Woordenboekwaarde]     ← uitkomst van actie 4
-          language_code   Tekst              nl
-          speaker_labels  Booleaanse waarde  Waar
-          speech_models   Array              →  Tekst  universal-3-5-pro
-                                             →  Tekst  universal-2
-────────────────────────────────────────────────────────────
-6  Haal woordenboekwaarde op  Waarde  voor  id  in  [Inhoud van URL]
-────────────────────────────────────────────────────────────
-7  Stel variabele in  ID  op  [Woordenboekwaarde]
-────────────────────────────────────────────────────────────
-8  Tekst   queued
-────────────────────────────────────────────────────────────
-9  Stel variabele in  Status  op  [Tekst]
+https://api.eu.assemblyai.com/v2/transcript
 ```
-Let op: precies `universal-3-5-pro` met streepjes.
+Tik op **›**:
+- Methode: **POST**
+- Headers → **Voeg nieuwe header toe** → sleutel:
+  ```
+  authorization
+  ```
+  waarde: 🔵 **Sleutel**
+- Hoofdtekst verzoek: **JSON**. Voeg 4 velden toe met **Voeg nieuw veld toe**:
+
+  **Veld 1** – type **Tekst** – sleutel:
+  ```
+  audio_url
+  ```
+  waarde: 🔵 **Woordenboekwaarde** (de uitkomst van actie 4)
+
+  **Veld 2** – type **Tekst** – sleutel:
+  ```
+  language_code
+  ```
+  waarde:
+  ```
+  nl
+  ```
+
+  **Veld 3** – type **Booleaanse waarde** – sleutel:
+  ```
+  speaker_labels
+  ```
+  waarde: zet de schakelaar **aan** (Waar)
+
+  **Veld 4** – type **Array** – sleutel:
+  ```
+  speech_models
+  ```
+  Tik op het veld en voeg 2 onderdelen van type **Tekst** toe:
+  ```
+  universal-3-5-pro
+  ```
+  ```
+  universal-2
+  ```
+
+---
+
+**Actie 6 – Haal woordenboekwaarde op**
+Haal **Waarde** op voor sleutel:
+```
+id
+```
+in: 🔵 **Inhoud van URL**
+
+---
+
+**Actie 7 – Stel variabele in**
+Variabelenaam:
+```
+ID
+```
+Invoer: 🔵 **Woordenboekwaarde**
+
+---
+
+**Actie 8 – Tekst**
+```
+queued
+```
+
+---
+
+**Actie 9 – Stel variabele in**
+Variabelenaam:
+```
+Status
+```
+Invoer: 🔵 **Tekst**
+
+---
 
 ### 4. Wachten tot het klaar is
 
+**Actie 10 – Herhaal** (Repeat)
+Aantal keer:
 ```
-10 Herhaal  200  keer                                            (Repeat)
-────────────────────────────────────────────────────────────
-11     Als  [Status]  is niet  completed
-────────────────────────────────────────────────────────────
-12         Als  [Status]  is niet  error
-────────────────────────────────────────────────────────────
-13             Wacht  3  seconden                                (Wait)
-────────────────────────────────────────────────────────────
-14             Haal inhoud van URL op
-                   URL: https://api.eu.assemblyai.com/v2/transcript/[ID]
-                   Methode: GET  ·  Headers: authorization = [Sleutel]
-────────────────────────────────────────────────────────────
-15             Stel variabele in  Resultaat  op  [Inhoud van URL]
-────────────────────────────────────────────────────────────
-16             Haal woordenboekwaarde op  Waarde  voor  status  in  [Resultaat]
-────────────────────────────────────────────────────────────
-17             Stel variabele in  Status  op  [Woordenboekwaarde]
-────────────────────────────────────────────────────────────
-18         Einde als
-────────────────────────────────────────────────────────────
-19     Einde als
-────────────────────────────────────────────────────────────
-20 Einde herhaal
+200
 ```
-Opdrachten heeft geen "herhaal tot klaar". Na `completed` slaat hij de resterende rondes in een flits over.
-Maximaal wachten: 200 × 3 s = 10 minuten.
 
-### 5. Regels maken
+---
 
+**Actie 11 – Als** (If) — binnen Herhaal
+Invoer: 🔵 **Status** · voorwaarde: **is niet** · tekst:
 ```
-21 Haal woordenboekwaarde op  Waarde  voor  utterances  in  [Resultaat]
-────────────────────────────────────────────────────────────
-22 Herhaal met elk  [Woordenboekwaarde]                          (Repeat with Each)
-────────────────────────────────────────────────────────────
-23     Haal woordenboekwaarde op  Waarde  voor  speaker  in  [Herhaalonderdeel]
-────────────────────────────────────────────────────────────
-24     Stel variabele in  Spreker  op  [Woordenboekwaarde]
-────────────────────────────────────────────────────────────
-25     Haal woordenboekwaarde op  Waarde  voor  text  in  [Herhaalonderdeel]
-────────────────────────────────────────────────────────────
-26     Tekst   Spreker [Spreker]: [Woordenboekwaarde]
-────────────────────────────────────────────────────────────
-27 Einde herhaal
-────────────────────────────────────────────────────────────
-28 Combineer  [Herhaalresultaten]  met  Nieuwe regel             (Combine Text)
+completed
 ```
-Bij 26 typ je `Spreker ` en `: ` zelf; **[Spreker]** is de variabele, **[Woordenboekwaarde]** de uitkomst van 25.
+Komt er een **Anders** bij? Laat die leeg.
+
+---
+
+**Actie 12 – Als** — binnen actie 11
+Invoer: 🔵 **Status** · voorwaarde: **is niet** · tekst:
+```
+error
+```
+
+---
+
+**Actie 13 – Wacht** (Wait) — binnen actie 12
+Seconden:
+```
+3
+```
+
+---
+
+**Actie 14 – Haal inhoud van URL op** — binnen actie 12
+URL: plak eerst dit (met de schuine streep aan het eind):
+```
+https://api.eu.assemblyai.com/v2/transcript/
+```
+en zet er direct daarachter 🔵 **ID** achter.
+Tik op **›**:
+- Methode: **GET**
+- Headers → **Voeg nieuwe header toe** → sleutel:
+  ```
+  authorization
+  ```
+  waarde: 🔵 **Sleutel**
+
+---
+
+**Actie 15 – Stel variabele in** — binnen actie 12
+Variabelenaam:
+```
+Resultaat
+```
+Invoer: 🔵 **Inhoud van URL**
+
+---
+
+**Actie 16 – Haal woordenboekwaarde op** — binnen actie 12
+Haal **Waarde** op voor sleutel:
+```
+status
+```
+in: 🔵 **Resultaat**
+
+---
+
+**Actie 17 – Stel variabele in** — binnen actie 12
+Variabelenaam:
+```
+Status
+```
+Invoer: 🔵 **Woordenboekwaarde**
+
+---
+
+### 5. Regels maken — ná **Einde herhaal**
+
+**Actie 18 – Haal woordenboekwaarde op**
+Haal **Waarde** op voor sleutel:
+```
+utterances
+```
+in: 🔵 **Resultaat**
+
+---
+
+**Actie 19 – Herhaal met elk** (Repeat with Each)
+Invoer: 🔵 **Woordenboekwaarde**
+
+---
+
+**Actie 20 – Haal woordenboekwaarde op** — binnen Herhaal met elk
+Haal **Waarde** op voor sleutel:
+```
+speaker
+```
+in: 🔵 **Herhaalonderdeel**
+
+---
+
+**Actie 21 – Stel variabele in** — binnen Herhaal met elk
+Variabelenaam:
+```
+Spreker
+```
+Invoer: 🔵 **Woordenboekwaarde**
+
+---
+
+**Actie 22 – Haal woordenboekwaarde op** — binnen Herhaal met elk
+Haal **Waarde** op voor sleutel:
+```
+text
+```
+in: 🔵 **Herhaalonderdeel**
+
+---
+
+**Actie 23 – Tekst** — binnen Herhaal met elk
+Bouw het tekstvak zo op, van links naar rechts:
+1. typ `Spreker` en daarna **één spatie**
+2. 🔵 **Spreker**
+3. typ een **dubbele punt en één spatie**
+4. 🔵 **Woordenboekwaarde** (de uitkomst van actie 22)
+
+Het ziet er dan zo uit: `Spreker` 🔵Spreker `: ` 🔵Woordenboekwaarde
+
+---
+
+**Actie 24 – Combineer tekst** (Combine Text) — ná **Einde herhaal**
+Invoer: 🔵 **Herhaalresultaten** · combineer met: **Nieuwe regel**
+
+---
 
 ### 6. Opslaan in Notities
 
-```
-29 Haal naam op  [Opdrachtinvoer]                                (Get Name)
-────────────────────────────────────────────────────────────
-30 Tekst
-       [Naam] – [Huidige datum]
+**Actie 25 – Haal naam op** (Get Name)
+Invoer: 🔵 **Opdrachtinvoer**
 
-       [Gecombineerde tekst]
-────────────────────────────────────────────────────────────
-31 Maak notitie aan  met  [Tekst]                                (Create Note)
-────────────────────────────────────────────────────────────
-32 Toon notitie  [Notitie]                                       (Show Note)
-```
-Bij 30: tik op **[Huidige datum]** → kies datumnotatie **Lang** en tijd **Kort**.
-Actie 32 is optioneel: die opent de notitie meteen.
+---
 
-Mislukt het uitschrijven (bijvoorbeeld door een verkeerde sleutel)? Dan blijft de notitie leeg op de titel na.
-Een duidelijke foutmelding voegen we toe in de uitgebreide versie.
+**Actie 26 – Tekst**
+Bouw het tekstvak zo op:
+1. 🔵 **Naam**
+2. typ een spatie, een streepje en een spatie
+3. 🔵 **Huidige datum** → tik erop → datumnotatie **Lang**, tijdnotatie **Kort**
+4. druk **twee keer op Enter** (lege regel)
+5. 🔵 **Gecombineerde tekst**
+
+---
+
+**Actie 27 – Maak notitie aan** (Create Note)
+Hoofdtekst: 🔵 **Tekst**
+
+---
+
+**Actie 28 – Toon notitie** (Show Note) — optioneel, opent de notitie meteen
+Invoer: 🔵 **Notitie**
 
 ---
 
@@ -169,7 +350,7 @@ Een duidelijke foutmelding voegen we toe in de uitgebreide versie.
 |---|---|
 | Opdracht staat niet in het Dictafoon-deelmenu | (i) → **Toon in deelmenu** aan; invoer **Media** en **Bestanden**. Scroll in het deelmenu helemaal naar beneden, of tik op **Wijzig acties** en zet hem bij Favorieten. |
 | Opdracht doet niets als je hem los start | Klopt: hij werkt alleen via **Deel** in Dictafoon. |
-| Notitie bevat alleen de titel | Laat de opdracht vanuit de editor lopen (▶︎) en kijk bij actie 14/15 wat er terugkomt. Staat er `error`, dan zie je daar de reden. |
+| Notitie bevat alleen de titel | Laat de opdracht vanuit de editor lopen (▶︎) en kijk bij actie 14 en 15 wat er terugkomt. Staat er `error`, dan zie je daar de reden. |
 | `Unauthorized` / `401` | Header precies `authorization`, sleutel zonder spaties. |
 | Iets over `speech_models` | Moet een **Array** zijn met `universal-3-5-pro` en `universal-2`. |
 | "Te veel gegevens" | Zie Voorbereiding stap 1. |
