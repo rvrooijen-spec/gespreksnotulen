@@ -1,7 +1,7 @@
 # Opdracht "Gesprek uitschrijven" – eenvoudige versie
 
 Een iPhone-opdracht (Shortcut) die een Dictafoon-opname laat uitschrijven door **AssemblyAI (EU-server)**
-en het resultaat als notitie in **Notities** zet. Zo kort mogelijk gehouden: 37 acties.
+en het resultaat als notitie in **Notities** zet. Zo kort mogelijk gehouden: 32 acties.
 Werkt dit, dan breiden we hem uit (tijden, namen, delen met ChatGPT/Claude).
 
 Uitkomst in Notities:
@@ -17,14 +17,9 @@ Spreker B: Ja, prima.
 
 ## Zo gebruik je hem
 
-- **Vanuit Dictafoon** (aanbevolen): tik op een opname → **•••** → **Deel** → **Gesprek uitschrijven**.
-  Werkt ook voor opnames van je Apple Watch (die komen vanzelf op de iPhone).
-- **Opdracht direct starten**: de opdracht opent Dictafoon. Kies daar de opname en doe hetzelfde als hierboven.
-
-### Waarom niet "kies een opname" in de opdracht zelf?
-Opdrachten kan de opnames van Dictafoon niet als bestand ophalen. De Dictafoon-acties in Opdrachten kunnen
-een opname alleen **openen of afspelen**, niet doorgeven aan een volgende stap. De enige manier om de audio
-in de opdracht te krijgen is via **Deel** in Dictafoon.
+Open **Dictafoon** → tik op een opname → **•••** → **Deel** → kies **Gesprek uitschrijven**.
+Na ±30 seconden (langer bij lange opnames) staat het gesprek als nieuwe notitie in Notities.
+Werkt ook voor opnames van je Apple Watch: die staan vanzelf in Dictafoon op de iPhone.
 
 ---
 
@@ -34,7 +29,7 @@ in de opdracht te krijgen is via **Deel** in Dictafoon.
 2. Open **Opdrachten** → **+**. Tik bovenaan op de naam → **Wijzig naam** → `Gesprek uitschrijven`.
 3. Tik op **(i)** (of het pijltje naast de naam → **Details**) → zet **Toon in deelmenu** aan.
 4. Bovenaan staat nu **Ontvang … uit Deelmenu**. Tik op het eerste woord en laat alleen **Media** en
-   **Bestanden** aangevinkt. Zet **Als er geen invoer is** op **Ga door**.
+   **Bestanden** aangevinkt. Zet **Als er geen invoer is** op **Stop**.
 
 Variabelen kies je door in een veld te tikken en boven het toetsenbord de naam te kiezen
 (of **Variabele selecteren**). Hieronder staan ze als **[Naam]**. Inspringen = binnen een Als/Herhaal-blok.
@@ -43,101 +38,91 @@ Variabelen kies je door in een veld te tikken en boven het toetsenbord de naam t
 
 ## De acties
 
-### 1. Geen opname gedeeld? Open Dictafoon
+### 1. Sleutel
 
 ```
-1  Als  [Opdrachtinvoer]  heeft geen waarde                      (If)
-2      Toon melding  "Kies een opname en tik op Deel → Gesprek uitschrijven"   (Show Notification)
-3      Open app  Dictafoon                                       (Open App)
-4      Stop deze opdracht                                        (Stop This Shortcut)
-5  Einde als
+1  Tekst   <plak hier je AssemblyAI-sleutel>                     (Text)
+2  Stel variabele in  Sleutel  op  [Tekst]                       (Set Variable)
 ```
 
-### 2. Sleutel
+### 2. Uploaden
 
 ```
-6  Tekst   <plak hier je AssemblyAI-sleutel>                     (Text)
-7  Stel variabele in  Sleutel  op  [Tekst]                       (Set Variable)
-```
-
-### 3. Uploaden
-
-```
-8  Haal inhoud van URL op                                        (Get Contents of URL)
+3  Haal inhoud van URL op                                        (Get Contents of URL)
        URL:  https://api.eu.assemblyai.com/v2/upload
        tik op ›:  Methode: POST
        Headers: + Nieuwe header  →  authorization  =  [Sleutel]
        Hoofdtekst verzoek: Bestand  →  [Opdrachtinvoer]
-9  Haal woordenboekwaarde op  Waarde  voor  upload_url  in  [Inhoud van URL]   (Get Dictionary Value)
+4  Haal woordenboekwaarde op  Waarde  voor  upload_url  in  [Inhoud van URL]   (Get Dictionary Value)
 ```
 
-### 4. Uitschrijven starten
+### 3. Uitschrijven starten
 
 ```
-10 Haal inhoud van URL op
+5  Haal inhoud van URL op
        URL:  https://api.eu.assemblyai.com/v2/transcript
        Methode: POST
        Headers: authorization = [Sleutel]
        Hoofdtekst verzoek: JSON  (+ Nieuw veld):
-          audio_url       Tekst              [Woordenboekwaarde]     ← uitkomst van actie 9
+          audio_url       Tekst              [Woordenboekwaarde]     ← uitkomst van actie 4
           language_code   Tekst              nl
           speaker_labels  Booleaanse waarde  Waar
           speech_models   Array              →  Tekst  universal-3-5-pro
                                              →  Tekst  universal-2
-11 Haal woordenboekwaarde op  Waarde  voor  id  in  [Inhoud van URL]
-12 Stel variabele in  ID  op  [Woordenboekwaarde]
-13 Tekst   queued
-14 Stel variabele in  Status  op  [Tekst]
+6  Haal woordenboekwaarde op  Waarde  voor  id  in  [Inhoud van URL]
+7  Stel variabele in  ID  op  [Woordenboekwaarde]
+8  Tekst   queued
+9  Stel variabele in  Status  op  [Tekst]
 ```
 Let op: precies `universal-3-5-pro` met streepjes.
 
-### 5. Wachten tot het klaar is
+### 4. Wachten tot het klaar is
 
 ```
-15 Herhaal  200  keer                                            (Repeat)
-16     Als  [Status]  is niet  completed
-17         Als  [Status]  is niet  error
-18             Wacht  3  seconden                                (Wait)
-19             Haal inhoud van URL op
+10 Herhaal  200  keer                                            (Repeat)
+11     Als  [Status]  is niet  completed
+12         Als  [Status]  is niet  error
+13             Wacht  3  seconden                                (Wait)
+14             Haal inhoud van URL op
                    URL: https://api.eu.assemblyai.com/v2/transcript/[ID]
                    Methode: GET  ·  Headers: authorization = [Sleutel]
-20             Stel variabele in  Resultaat  op  [Inhoud van URL]
-21             Haal woordenboekwaarde op  Waarde  voor  status  in  [Resultaat]
-22             Stel variabele in  Status  op  [Woordenboekwaarde]
-23         Einde als
-24     Einde als
-25 Einde herhaal
+15             Stel variabele in  Resultaat  op  [Inhoud van URL]
+16             Haal woordenboekwaarde op  Waarde  voor  status  in  [Resultaat]
+17             Stel variabele in  Status  op  [Woordenboekwaarde]
+18         Einde als
+19     Einde als
+20 Einde herhaal
 ```
 Opdrachten heeft geen "herhaal tot klaar". Na `completed` slaat hij de resterende rondes in een flits over.
 Maximaal wachten: 200 × 3 s = 10 minuten.
 
-### 6. Regels maken
+### 5. Regels maken
 
 ```
-26 Haal woordenboekwaarde op  Waarde  voor  utterances  in  [Resultaat]
-27 Herhaal met elk  [Woordenboekwaarde]                          (Repeat with Each)
-28     Haal woordenboekwaarde op  Waarde  voor  speaker  in  [Herhaalonderdeel]
-29     Stel variabele in  Spreker  op  [Woordenboekwaarde]
-30     Haal woordenboekwaarde op  Waarde  voor  text  in  [Herhaalonderdeel]
-31     Tekst   Spreker [Spreker]: [Woordenboekwaarde]
-32 Einde herhaal
-33 Combineer  [Herhaalresultaten]  met  Nieuwe regel             (Combine Text)
+21 Haal woordenboekwaarde op  Waarde  voor  utterances  in  [Resultaat]
+22 Herhaal met elk  [Woordenboekwaarde]                          (Repeat with Each)
+23     Haal woordenboekwaarde op  Waarde  voor  speaker  in  [Herhaalonderdeel]
+24     Stel variabele in  Spreker  op  [Woordenboekwaarde]
+25     Haal woordenboekwaarde op  Waarde  voor  text  in  [Herhaalonderdeel]
+26     Tekst   Spreker [Spreker]: [Woordenboekwaarde]
+27 Einde herhaal
+28 Combineer  [Herhaalresultaten]  met  Nieuwe regel             (Combine Text)
 ```
-Bij 31 typ je `Spreker ` en `: ` zelf; **[Spreker]** is de variabele, **[Woordenboekwaarde]** de uitkomst van 30.
+Bij 26 typ je `Spreker ` en `: ` zelf; **[Spreker]** is de variabele, **[Woordenboekwaarde]** de uitkomst van 25.
 
-### 7. Opslaan in Notities
+### 6. Opslaan in Notities
 
 ```
-34 Haal naam op  [Opdrachtinvoer]                                (Get Name)
-35 Tekst
+29 Haal naam op  [Opdrachtinvoer]                                (Get Name)
+30 Tekst
        [Naam] – [Huidige datum]
 
        [Gecombineerde tekst]
-36 Maak notitie aan  met  [Tekst]                                (Create Note)
-37 Toon notitie  [Notitie]                                       (Show Note)
+31 Maak notitie aan  met  [Tekst]                                (Create Note)
+32 Toon notitie  [Notitie]                                       (Show Note)
 ```
-Bij 35: tik op **[Huidige datum]** → kies datumnotatie **Lang** en tijd **Kort**.
-Actie 37 is optioneel: die opent de notitie meteen.
+Bij 30: tik op **[Huidige datum]** → kies datumnotatie **Lang** en tijd **Kort**.
+Actie 32 is optioneel: die opent de notitie meteen.
 
 Mislukt het uitschrijven (bijvoorbeeld door een verkeerde sleutel)? Dan blijft de notitie leeg op de titel na.
 Een duidelijke foutmelding voegen we toe in de uitgebreide versie.
@@ -147,7 +132,7 @@ Een duidelijke foutmelding voegen we toe in de uitgebreide versie.
 ## Testen
 
 1. Neem in Dictafoon 30 seconden op met twee stemmen.
-2. Opname → **Deel** → **Gesprek uitschrijven**.
+2. Tik op de opname → **•••** → **Deel** → **Gesprek uitschrijven**.
 3. De eerste keer vraagt iOS of de opdracht verbinding mag maken met `api.eu.assemblyai.com`:
    kies **Sta altijd toe**.
 4. Na ±30 seconden opent de notitie.
@@ -156,8 +141,9 @@ Een duidelijke foutmelding voegen we toe in de uitgebreide versie.
 
 | Wat je ziet | Oplossing |
 |---|---|
-| Opdracht staat niet in het Dictafoon-deelmenu | (i) → **Toon in deelmenu** aan; invoer **Media** en **Bestanden**. Scroll in het deelmenu naar beneden of kies **Wijzig acties**. |
-| Notitie bevat alleen de titel | Laat de opdracht vanuit de editor lopen (▶︎) en kijk bij actie 19/20 wat er terugkomt. Staat er `error`, dan zie je daar de reden. |
+| Opdracht staat niet in het Dictafoon-deelmenu | (i) → **Toon in deelmenu** aan; invoer **Media** en **Bestanden**. Scroll in het deelmenu helemaal naar beneden, of tik op **Wijzig acties** en zet hem bij Favorieten. |
+| Opdracht doet niets als je hem los start | Klopt: hij werkt alleen via **Deel** in Dictafoon. |
+| Notitie bevat alleen de titel | Laat de opdracht vanuit de editor lopen (▶︎) en kijk bij actie 14/15 wat er terugkomt. Staat er `error`, dan zie je daar de reden. |
 | `Unauthorized` / `401` | Header precies `authorization`, sleutel zonder spaties. |
 | Iets over `speech_models` | Moet een **Array** zijn met `universal-3-5-pro` en `universal-2`. |
 | "Te veel gegevens" | Zie Voorbereiding stap 1. |
