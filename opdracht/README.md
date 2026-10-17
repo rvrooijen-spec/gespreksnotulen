@@ -1,19 +1,16 @@
 # Opdracht "Gesprek uitschrijven" – eenvoudige versie
 
 Een iPhone-opdracht (Shortcut) die een Dictafoon-opname laat uitschrijven door **AssemblyAI (EU-server)**
-en het resultaat als notitie in **Notities** zet. Zo kort mogelijk gehouden: 28 acties.
+en het resultaat als notitie in **Notities** zet. Zo kort mogelijk gehouden: 27 acties.
 Werkt dit, dan breiden we hem uit (tijden, namen, delen met ChatGPT/Claude).
 
 Uitkomst in Notities:
 ```
-Teamoverleg – 17 oktober 2026 14:30
+Teamoverleg
 
 Spreker A: Goedemorgen allemaal, zullen we beginnen?
 Spreker B: Ja, prima.
 ```
-
-> De Nederlandse naam van een actie staat vooraan, de Engelse tussen haakjes.
-> Vind je een actie niet, typ dan een deel van de naam in het zoekveld (bijv. "URL", "woordenboek").
 
 ## Zo gebruik je hem
 
@@ -35,149 +32,144 @@ Werkt ook voor opnames van je Apple Watch: die staan vanzelf in Dictafoon op de 
 
 ## De acties
 
-**Een actie toevoegen:** tik onderaan in de opdracht op het zoekveld **Zoek naar apps en acties**
-(of op **+ Voeg actie toe** / **Voeg actie toe**). Typ de zoekterm achter ➕ en tik op het resultaat met
-precies die naam. De actie komt **onderaan** de opdracht te staan. Moet hij binnen een **Als** of
-**Herhaal**: houd de actie vast en sleep hem tussen de regels **Als … / Einde als** of **Herhaal / Einde herhaal**.
-
-**Zo lees je dit:**
-- Een grijs blok = tekst die je **kopieert en plakt**, precies zoals hij is.
-- **🔵 Variabele** = die kun je niet plakken. Tik in het veld en kies hem in de balk boven het toetsenbord
-  (of tik op het veld → **Selecteer variabele**). Vaak staat de juiste al ingevuld.
-- **Einde als** en **Einde herhaal** komen er automatisch bij; die voeg je niet zelf toe.
-  Sleep de acties die "binnen" horen tussen **Als** en **Einde als**.
-
----
+Grijze blokken kopieer en plak je precies zoals ze zijn.
+"Tik boven het toetsenbord op …" = in de balk met variabelen die boven het toetsenbord verschijnt.
 
 ### 1. Sleutel
 
-**Actie 1 – Tekst** (Text)
-➕ Zoek: `tekst` → tik op **Tekst** (het resultaat dat alleen "Tekst" heet)
-
-Plak je eigen AssemblyAI-sleutel in het tekstvak.
+**Actie 1 – Tekst**
+1. Tik onderaan op het zoekveld en typ: `tekst`
+2. Tik op **Tekst**.
+3. Tik in het tekstvak, wis wat er staat en plak je eigen AssemblyAI-sleutel.
 
 ---
 
-**Actie 2 – Stel variabele in** (Set Variable)
-➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
-
-Variabelenaam:
+**Actie 2 – Stel variabele in**
+1. Tik op het zoekveld en typ: `stel variabele in`
+2. Tik op **Stel variabele in**.
+3. Tik op **Variabelenaam** en plak:
 ```
 Sleutel
 ```
-Invoer: 🔵 **Tekst**
+4. Controleer: achter **op** staat **Tekst**.
 
 ---
 
 ### 2. Uploaden
 
-**Actie 3 – Haal inhoud van URL op** (Get Contents of URL)
-➕ Zoek: `inhoud van url` → tik op **Haal inhoud van URL op**
-
-URL:
+**Actie 3 – Haal inhoud van URL op**
+1. Tik onderaan op het zoekveld en typ: `inhoud van url`
+2. Tik op **Haal inhoud van URL op**.
+3. Tik in de actie op het blauwe woord **URL** en plak:
 ```
 https://api.eu.assemblyai.com/v2/upload
 ```
-Tik op **›** (meer opties):
-- Methode: **POST**
-- Headers → **Voeg nieuwe header toe** → sleutel:
-  ```
-  authorization
-  ```
-  waarde: 🔵 **Sleutel**
-- Hoofdtekst verzoek: **Bestand** → bestand: 🔵 **Opdrachtinvoer**
+4. Tik op het pijltje **›** rechts in de actie. Er klappen extra regels open.
+5. Tik achter **Methode** op **GET** en kies **POST**.
+6. Tik op **Headers** en daarna op **Voeg nieuwe header toe**.
+7. Tik op **Sleutel** en plak:
+```
+authorization
+```
+8. Tik op **Tekst** (rechts naast authorization). Tik boven het toetsenbord op **Sleutel**.
+9. Tik achter **Hoofdtekst verzoek** op **JSON** en kies **Bestand**.
+10. Tik op **Bestand** en kies **Opdrachtinvoer**.
 
 ---
 
-**Actie 4 – Haal woordenboekwaarde op** (Get Dictionary Value)
-➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
-
-Haal **Waarde** op voor sleutel:
+**Actie 4 – Haal woordenboekwaarde op**
+1. Tik op het zoekveld en typ: `woordenboekwaarde`
+2. Tik op **Haal woordenboekwaarde op**.
+3. Tik op het blauwe woord **Sleutel** en plak:
 ```
 upload_url
 ```
-in: 🔵 **Inhoud van URL**
+4. Controleer: achter **in** staat **Inhoud van URL**.
 
 ---
 
 ### 3. Uitschrijven starten
 
 **Actie 5 – Haal inhoud van URL op**
-➕ Zoek: `inhoud van url` → tik op **Haal inhoud van URL op**
-
-URL:
+1. Tik op het zoekveld en typ: `inhoud van url`
+2. Tik op **Haal inhoud van URL op**.
+3. Tik op **URL** en plak:
 ```
 https://api.eu.assemblyai.com/v2/transcript
 ```
-Tik op **›**:
-- Methode: **POST**
-- Headers → **Voeg nieuwe header toe** → sleutel:
-  ```
-  authorization
-  ```
-  waarde: 🔵 **Sleutel**
-- Hoofdtekst verzoek: **JSON**. Voeg 4 velden toe met **Voeg nieuw veld toe**:
-
-  **Veld 1** – type **Tekst** – sleutel:
-  ```
-  audio_url
-  ```
-  waarde: 🔵 **Woordenboekwaarde** (de uitkomst van actie 4)
-
-  **Veld 2** – type **Tekst** – sleutel:
-  ```
-  language_code
-  ```
-  waarde:
-  ```
-  nl
-  ```
-
-  **Veld 3** – type **Booleaanse waarde** – sleutel:
-  ```
-  speaker_labels
-  ```
-  waarde: zet de schakelaar **aan** (Waar)
-
-  **Veld 4** – type **Array** – sleutel:
-  ```
-  speech_models
-  ```
-  Tik op het veld en voeg 2 onderdelen van type **Tekst** toe:
-  ```
-  universal-3-5-pro
-  ```
-  ```
-  universal-2
-  ```
+4. Tik op het pijltje **›**.
+5. Tik achter **Methode** op **GET** en kies **POST**.
+6. Tik op **Headers** → **Voeg nieuwe header toe**.
+7. Tik op **Sleutel** en plak:
+```
+authorization
+```
+8. Tik op **Tekst** ernaast. Tik boven het toetsenbord op **Sleutel**.
+9. Controleer: achter **Hoofdtekst verzoek** staat **JSON**. Zo niet: tik erop en kies **JSON**.
+10. Tik op **Voeg nieuw veld toe** → kies **Tekst**.
+    Tik op **Sleutel** en plak:
+```
+audio_url
+```
+    Tik op **Tekst** ernaast. Tik boven het toetsenbord op **Woordenboekwaarde**.
+11. Tik op **Voeg nieuw veld toe** → kies **Tekst**.
+    Tik op **Sleutel** en plak:
+```
+language_code
+```
+    Tik op **Tekst** ernaast en plak:
+```
+nl
+```
+12. Tik op **Voeg nieuw veld toe** → kies **Booleaanse waarde**.
+    Tik op **Sleutel** en plak:
+```
+speaker_labels
+```
+    Zet de schakelaar ernaast **aan**.
+13. Tik op **Voeg nieuw veld toe** → kies **Array**.
+    Tik op **Sleutel** en plak:
+```
+speech_models
+```
+    Tik op het veld ernaast (**0 onderdelen**). Tik op **Voeg nieuw onderdeel toe** → **Tekst** en plak:
+```
+universal-3-5-pro
+```
+    Tik nog een keer op **Voeg nieuw onderdeel toe** → **Tekst** en plak:
+```
+universal-2
+```
+    Tik op **Gereed**.
 
 ---
 
 **Actie 6 – Haal woordenboekwaarde op**
-➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
-
-Haal **Waarde** op voor sleutel:
+1. Tik op het zoekveld en typ: `woordenboekwaarde`
+2. Tik op **Haal woordenboekwaarde op**.
+3. Tik op **Sleutel** en plak:
 ```
 id
 ```
-in: 🔵 **Inhoud van URL**
+4. Controleer: achter **in** staat **Inhoud van URL**.
 
 ---
 
 **Actie 7 – Stel variabele in**
-➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
-
-Variabelenaam:
+1. Tik op het zoekveld en typ: `stel variabele in`
+2. Tik op **Stel variabele in**.
+3. Tik op **Variabelenaam** en plak:
 ```
 ID
 ```
-Invoer: 🔵 **Woordenboekwaarde**
+4. Controleer: achter **op** staat **Woordenboekwaarde**.
 
 ---
 
 **Actie 8 – Tekst**
-➕ Zoek: `tekst` → tik op **Tekst** (het resultaat dat alleen "Tekst" heet)
-
+1. Tik op het zoekveld en typ: `tekst`
+2. Tik op **Tekst**.
+3. Tik in het tekstvak en plak:
 ```
 queued
 ```
@@ -185,215 +177,247 @@ queued
 ---
 
 **Actie 9 – Stel variabele in**
-➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
-
-Variabelenaam:
+1. Tik op het zoekveld en typ: `stel variabele in`
+2. Tik op **Stel variabele in**.
+3. Tik op **Variabelenaam** en plak:
 ```
 Status
 ```
-Invoer: 🔵 **Tekst**
+4. Controleer: achter **op** staat **Tekst**.
 
 ---
 
 ### 4. Wachten tot het klaar is
 
-**Actie 10 – Herhaal** (Repeat)
-➕ Zoek: `herhaal` → tik op **Herhaal** (niet "Herhaal met elk")
-
-Aantal keer:
+**Actie 10 – Herhaal**
+1. Tik op het zoekveld en typ: `herhaal`
+2. Tik op **Herhaal** (niet "Herhaal met elk").
+3. Tik op het getal (**10**) en vervang het door:
 ```
 200
 ```
+Er staan nu twee regels: **Herhaal 200 keer** en **Einde herhaal**.
 
 ---
 
-**Actie 11 – Als** (If) — binnen Herhaal
-➕ Zoek: `als` → tik op **Als** (categorie Scripting)
-
-Invoer: 🔵 **Status** · voorwaarde: **is niet** · tekst:
+**Actie 11 – Als**
+1. Tik op het zoekveld en typ: `als`
+2. Tik op **Als**.
+3. Houd de nieuwe actie **Als** vast en sleep hem tussen **Herhaal 200 keer** en **Einde herhaal**.
+   (De regels **Anders** en **Einde als** schuiven mee.)
+4. Tik op **Invoer** en kies **Status**.
+5. Tik op **Voorwaarde** en kies **is niet**.
+6. Tik op **Tekst** en plak:
 ```
 completed
 ```
-Komt er een **Anders** bij? Laat die leeg.
 
 ---
 
-**Actie 12 – Als** — binnen actie 11
-➕ Zoek: `als` → tik op **Als** (categorie Scripting)
-
-Invoer: 🔵 **Status** · voorwaarde: **is niet** · tekst:
+**Actie 12 – Als**
+1. Tik op het zoekveld en typ: `als`
+2. Tik op **Als**.
+3. Sleep hem direct onder **Als Status is niet completed** (dus vóór de eerste **Anders**).
+4. Tik op **Invoer** en kies **Status**.
+5. Tik op **Voorwaarde** en kies **is niet**.
+6. Tik op **Tekst** en plak:
 ```
 error
 ```
 
 ---
 
-**Actie 13 – Wacht** (Wait) — binnen actie 12
-➕ Zoek: `wacht` → tik op **Wacht**
-
-Seconden:
+**Actie 13 – Wacht**
+1. Tik op het zoekveld en typ: `wacht`
+2. Tik op **Wacht**.
+3. Sleep hem direct onder **Als Status is niet error**.
+4. Tik op het getal (**1**) en vervang het door:
 ```
 3
 ```
 
 ---
 
-**Actie 14 – Haal inhoud van URL op** — binnen actie 12
-➕ Zoek: `inhoud van url` → tik op **Haal inhoud van URL op**
-
-URL: plak eerst dit (met de schuine streep aan het eind):
+**Actie 14 – Haal inhoud van URL op**
+1. Tik op het zoekveld en typ: `inhoud van url`
+2. Tik op **Haal inhoud van URL op**.
+3. Sleep hem direct onder **Wacht 3 seconden**.
+4. Tik op **URL** en plak:
 ```
 https://api.eu.assemblyai.com/v2/transcript/
 ```
-en zet er direct daarachter 🔵 **ID** achter.
-Tik op **›**:
-- Methode: **GET**
-- Headers → **Voeg nieuwe header toe** → sleutel:
-  ```
-  authorization
-  ```
-  waarde: 🔵 **Sleutel**
+5. Laat de cursor aan het eind staan. Tik boven het toetsenbord op **ID**.
+6. Tik op het pijltje **›**.
+7. Laat **Methode** op **GET** staan.
+8. Tik op **Headers** → **Voeg nieuwe header toe**.
+9. Tik op **Sleutel** en plak:
+```
+authorization
+```
+10. Tik op **Tekst** ernaast. Tik boven het toetsenbord op **Sleutel**.
 
 ---
 
-**Actie 15 – Stel variabele in** — binnen actie 12
-➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
-
-Variabelenaam:
+**Actie 15 – Stel variabele in**
+1. Tik op het zoekveld en typ: `stel variabele in`
+2. Tik op **Stel variabele in**.
+3. Sleep hem direct onder actie 14.
+4. Tik op **Variabelenaam** en plak:
 ```
 Resultaat
 ```
-Invoer: 🔵 **Inhoud van URL**
+5. Controleer: achter **op** staat **Inhoud van URL**.
 
 ---
 
-**Actie 16 – Haal woordenboekwaarde op** — binnen actie 12
-➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
-
-Haal **Waarde** op voor sleutel:
+**Actie 16 – Haal woordenboekwaarde op**
+1. Tik op het zoekveld en typ: `woordenboekwaarde`
+2. Tik op **Haal woordenboekwaarde op**.
+3. Sleep hem direct onder actie 15.
+4. Tik op **Sleutel** en plak:
 ```
 status
 ```
-in: 🔵 **Resultaat**
+5. Tik op het woord achter **in** en kies **Resultaat**.
 
 ---
 
-**Actie 17 – Stel variabele in** — binnen actie 12
-➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
-
-Variabelenaam:
+**Actie 17 – Stel variabele in**
+1. Tik op het zoekveld en typ: `stel variabele in`
+2. Tik op **Stel variabele in**.
+3. Sleep hem direct onder actie 16.
+4. Tik op **Variabelenaam** en plak:
 ```
 Status
 ```
-Invoer: 🔵 **Woordenboekwaarde**
+5. Controleer: achter **op** staat **Woordenboekwaarde**.
+
+Controle blok 4 – zo moet het eruitzien:
+```
+Herhaal 200 keer
+    Als Status is niet completed
+        Als Status is niet error
+            Wacht 3 seconden
+            Haal inhoud van URL op
+            Stel variabele in Resultaat
+            Haal woordenboekwaarde op status
+            Stel variabele in Status
+        Anders
+        Einde als
+    Anders
+    Einde als
+Einde herhaal
+```
 
 ---
 
-### 5. Regels maken — ná **Einde herhaal**
+### 5. Regels maken
+
+Deze acties komen **onder Einde herhaal** (ze komen daar vanzelf, niet slepen).
 
 **Actie 18 – Haal woordenboekwaarde op**
-➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
-
-Haal **Waarde** op voor sleutel:
+1. Tik op het zoekveld en typ: `woordenboekwaarde`
+2. Tik op **Haal woordenboekwaarde op**.
+3. Tik op **Sleutel** en plak:
 ```
 utterances
 ```
-in: 🔵 **Resultaat**
+4. Tik op het woord achter **in** en kies **Resultaat**.
 
 ---
 
-**Actie 19 – Herhaal met elk** (Repeat with Each)
-➕ Zoek: `herhaal met elk` → tik op **Herhaal met elk**
-
-Invoer: 🔵 **Woordenboekwaarde**
+**Actie 19 – Herhaal met elk**
+1. Tik op het zoekveld en typ: `herhaal met elk`
+2. Tik op **Herhaal met elk**.
+3. Controleer: er staat **Herhaal met elk onderdeel in Woordenboekwaarde**.
 
 ---
 
-**Actie 20 – Haal woordenboekwaarde op** — binnen Herhaal met elk
-➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
-
-Haal **Waarde** op voor sleutel:
+**Actie 20 – Haal woordenboekwaarde op**
+1. Tik op het zoekveld en typ: `woordenboekwaarde`
+2. Tik op **Haal woordenboekwaarde op**.
+3. Sleep hem tussen **Herhaal met elk** en **Einde herhaal**.
+4. Tik op **Sleutel** en plak:
 ```
 speaker
 ```
-in: 🔵 **Herhaalonderdeel**
+5. Tik op het woord achter **in** en kies **Herhaalonderdeel**.
 
 ---
 
-**Actie 21 – Stel variabele in** — binnen Herhaal met elk
-➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
-
-Variabelenaam:
+**Actie 21 – Stel variabele in**
+1. Tik op het zoekveld en typ: `stel variabele in`
+2. Tik op **Stel variabele in**.
+3. Sleep hem direct onder actie 20.
+4. Tik op **Variabelenaam** en plak:
 ```
 Spreker
 ```
-Invoer: 🔵 **Woordenboekwaarde**
 
 ---
 
-**Actie 22 – Haal woordenboekwaarde op** — binnen Herhaal met elk
-➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
-
-Haal **Waarde** op voor sleutel:
+**Actie 22 – Haal woordenboekwaarde op**
+1. Tik op het zoekveld en typ: `woordenboekwaarde`
+2. Tik op **Haal woordenboekwaarde op**.
+3. Sleep hem direct onder actie 21.
+4. Tik op **Sleutel** en plak:
 ```
 text
 ```
-in: 🔵 **Herhaalonderdeel**
+5. Tik op het woord achter **in** en kies **Herhaalonderdeel**.
 
 ---
 
-**Actie 23 – Tekst** — binnen Herhaal met elk
-➕ Zoek: `tekst` → tik op **Tekst** (het resultaat dat alleen "Tekst" heet)
+**Actie 23 – Tekst**
+1. Tik op het zoekveld en typ: `tekst`
+2. Tik op **Tekst**.
+3. Sleep hem direct onder actie 22.
+4. Tik in het tekstvak en wis wat er staat.
+5. Typ het woord Spreker en een spatie.
+6. Tik boven het toetsenbord op **Spreker**.
+7. Typ een dubbele punt en een spatie.
+8. Tik boven het toetsenbord op **Woordenboekwaarde**.
 
-Bouw het tekstvak zo op, van links naar rechts:
-1. typ `Spreker` en daarna **één spatie**
-2. 🔵 **Spreker**
-3. typ een **dubbele punt en één spatie**
-4. 🔵 **Woordenboekwaarde** (de uitkomst van actie 22)
-
-Het ziet er dan zo uit: `Spreker` 🔵Spreker `: ` 🔵Woordenboekwaarde
+In de notitie wordt dat bijvoorbeeld: `Spreker A: Goedemorgen.`
 
 ---
 
-**Actie 24 – Combineer tekst** (Combine Text) — ná **Einde herhaal**
-➕ Zoek: `combineer` → tik op **Combineer tekst**
-
-Invoer: 🔵 **Herhaalresultaten** · combineer met: **Nieuwe regel**
+**Actie 24 – Combineer tekst**
+Deze komt onder **Einde herhaal**.
+1. Tik op het zoekveld en typ: `combineer`
+2. Tik op **Combineer tekst**.
+3. Controleer: er staat **Combineer Herhaalresultaten met Nieuwe regel**.
+   Staat er **Spaties**: tik erop en kies **Nieuwe regel**.
 
 ---
 
 ### 6. Opslaan in Notities
 
-**Actie 25 – Haal naam op** (Get Name)
-➕ Zoek: `haal naam op` → tik op **Haal naam op**
-
-Invoer: 🔵 **Opdrachtinvoer**
+**Actie 25 – Haal naam op**
+1. Tik op het zoekveld en typ: `haal naam op`
+2. Tik op **Haal naam op**.
+3. Tik op het woord in de actie en kies **Opdrachtinvoer**.
 
 ---
 
 **Actie 26 – Tekst**
-➕ Zoek: `tekst` → tik op **Tekst** (het resultaat dat alleen "Tekst" heet)
-
-Bouw het tekstvak zo op:
-1. 🔵 **Naam**
-2. typ een spatie, een streepje en een spatie
-3. 🔵 **Huidige datum** → tik erop → datumnotatie **Lang**, tijdnotatie **Kort**
-4. druk **twee keer op Enter** (lege regel)
-5. 🔵 **Gecombineerde tekst**
+1. Tik op het zoekveld en typ: `tekst`
+2. Tik op **Tekst**.
+3. Tik in het tekstvak en wis wat er staat.
+4. Tik boven het toetsenbord op **Naam**.
+5. Druk twee keer op Enter.
+6. Tik boven het toetsenbord op **Gecombineerde tekst**.
 
 ---
 
-**Actie 27 – Maak notitie aan** (Create Note)
-➕ Zoek: `maak notitie` → tik op **Maak notitie aan**
-
-Hoofdtekst: 🔵 **Tekst**
+**Actie 27 – Maak notitie aan**
+1. Tik op het zoekveld en typ: `maak notitie`
+2. Tik op **Maak notitie aan**.
+3. Controleer: er staat **Tekst** in de actie.
 
 ---
 
-**Actie 28 – Toon notitie** (Show Note) — optioneel, opent de notitie meteen
-➕ Zoek: `notitie` → tik op **Toon notitie (of Open notitie)**
-
-Invoer: 🔵 **Notitie**
+**Klaar.** Tik rechtsboven op **Gereed**.
 
 ---
 
@@ -403,7 +427,7 @@ Invoer: 🔵 **Notitie**
 2. Tik op de opname → **•••** → **Deel** → **Gesprek uitschrijven**.
 3. De eerste keer vraagt iOS of de opdracht verbinding mag maken met `api.eu.assemblyai.com`:
    kies **Sta altijd toe**.
-4. Na ±30 seconden opent de notitie.
+4. Na ±30 seconden staat de notitie in Notities.
 
 ## Problemen oplossen
 
