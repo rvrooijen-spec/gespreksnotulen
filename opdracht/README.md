@@ -52,8 +52,7 @@ dat er het meest op lijkt:
 | Maak notitie aan | `notitie` | Create Note |
 
 Het pijltje **›** in een actie kan ook **Toon meer** heten.
-In iOS 26 heet het zoekveld onderaan **Zoek taken**, en **Einde als** / **Einde herhaal** worden niet
-als losse regels getoond: je ziet aan het inspringen wat binnen een blok staat.
+In iOS 26 heet het zoekveld onderaan **Zoek taken**.
 "Tik boven het toetsenbord op …" = in de balk met variabelen die boven het toetsenbord verschijnt.
 
 ### 1. Sleutel
