@@ -2,6 +2,9 @@
 
 iPhone-app die gesprekken opneemt en ze via **AssemblyAI** (EU-server) in het Nederlands uitschrijft, met wie wat zegt.
 
+> Liever geen eigen app? Zie [`opdracht/`](opdracht/README.md): een iPhone-opdracht (Shortcut) die hetzelfde doet
+> en die je zelf nabouwt in de Opdrachten-app.
+
 - Opnemen, ook met het scherm uit
 - Uitschrijven en sprekers herkennen met AssemblyAI (EU-endpoint, `api.eu.assemblyai.com`)
 - Verplicht aangeven wie "ik" ben; anderen heten standaard Persoon 2, 3, ... (aanpasbaar)
