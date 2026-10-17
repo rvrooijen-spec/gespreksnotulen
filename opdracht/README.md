@@ -33,6 +33,25 @@ Werkt ook voor opnames van je Apple Watch: die staan vanzelf in Dictafoon op de 
 ## De acties
 
 Grijze blokken kopieer en plak je precies zoals ze zijn.
+
+**Heet een actie op jouw iPhone (iOS 26) net anders?** Zoek dan op één kort woord en kies het resultaat
+dat er het meest op lijkt:
+
+| In deze instructie | Zoek op | Engelse naam (zelfde actie) |
+|---|---|---|
+| Haal inhoud van URL op | `url` | Get Contents of URL |
+| Haal woordenboekwaarde op | `woordenboek` | Get Dictionary Value |
+| Stel variabele in | `variabele` | Set Variable |
+| Tekst | `tekst` | Text |
+| Herhaal | `herhaal` | Repeat |
+| Herhaal met elk | `herhaal` | Repeat with Each |
+| Als | `als` | If |
+| Wacht | `wacht` | Wait |
+| Combineer tekst | `combineer` | Combine Text |
+| Haal naam op | `naam` | Get Name |
+| Maak notitie aan | `notitie` | Create Note |
+
+Het pijltje **›** in een actie kan ook **Toon meer** heten.
 "Tik boven het toetsenbord op …" = in de balk met variabelen die boven het toetsenbord verschijnt.
 
 ### 1. Sleutel
