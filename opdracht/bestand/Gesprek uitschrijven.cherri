@@ -1,0 +1,58 @@
+#define name Gesprek uitschrijven
+#define color yellow
+#define glyph microphone
+#define from sharesheet
+#define inputs media, file
+#define noinput stopwith "Deel een opname vanuit Dictafoon: Deel → Gesprek uitschrijven"
+
+#include 'actions/web'
+#include 'actions/text'
+
+#question apikey "Plak je AssemblyAI API-sleutel" "PLAK HIER JE ASSEMBLYAI-SLEUTEL"
+const sleutel = text(apikey)
+
+const upload = fileRequest("https://api.eu.assemblyai.com/v2/upload", "POST", ShortcutInput, {"authorization": "{sleutel}"})
+const uploadURL = getValue(upload, "upload_url")
+
+const start = jsonRequest("https://api.eu.assemblyai.com/v2/transcript", "POST", {"audio_url": "{uploadURL}", "language_code": "nl", "speaker_labels": true, "speech_models": ["universal-3-5-pro", "universal-2"]}, {"authorization": "{sleutel}"})
+const startID = getValue(start, "id")
+@id = "{startID}"
+@status = "queued"
+@resultaat: variable
+
+repeat i for 200 {
+    if @status != "completed" {
+        if @status != "error" {
+            wait(3)
+            const antwoord = downloadURL("https://api.eu.assemblyai.com/v2/transcript/{@id}", {"authorization": "{sleutel}"})
+            @resultaat = antwoord
+            const dict1 = getDictionary(antwoord)
+            const nieuweStatus = getValue(dict1, "status")
+            @status = "{nieuweStatus}"
+        }
+    }
+}
+
+if @status != "completed" {
+    const dict2 = getDictionary(@resultaat)
+    const fout = getValue(dict2, "error")
+    alert("Uitschrijven mislukt (status: {@status}). {fout}")
+    stop()
+}
+
+const dict3 = getDictionary(@resultaat)
+
+const uitspraken = getValue(dict3, "utterances")
+@regels: array
+for uitspraak in uitspraken {
+    const dict4 = getDictionary(@uitspraak)
+    const spreker = getValue(dict4, "speaker")
+    const dict5 = getDictionary(@uitspraak)
+    const zin = getValue(dict5, "text")
+    @regels += "Spreker {spreker}: {zin}"
+}
+const gesprek = joinText(@regels, "\n")
+const naam = getName(ShortcutInput)
+@verslag = "{naam}\n\n{gesprek}"
+
+rawAction("com.apple.mobilenotes.SharingExtension", {"WFCreateNoteInput": "${@verslag}"})

@@ -1,0 +1,41 @@
+name: Opdracht ondertekenen
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'opdracht/bestand/Gesprek uitschrijven_unsigned.shortcut'
+      - '.github/workflows/opdracht.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sign:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ondertekenen met Apple (shortcuts sign)
+        run: |
+          cd opdracht/bestand
+          shortcuts sign --mode anyone \
+            --input "Gesprek uitschrijven_unsigned.shortcut" \
+            --output "Gesprek uitschrijven.shortcut"
+          ls -la
+
+      - name: Ondertekend bestand bewaren
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gesprek-uitschrijven-shortcut
+          path: opdracht/bestand/Gesprek uitschrijven.shortcut
+
+      - name: In de repo zetten
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add "opdracht/bestand/Gesprek uitschrijven.shortcut"
+          git commit -m "Ondertekende opdracht bijgewerkt [skip ci]" || exit 0
+          git push
