@@ -52,12 +52,14 @@ dat er het meest op lijkt:
 | Maak notitie aan | `notitie` | Create Note |
 
 Het pijltje **›** in een actie kan ook **Toon meer** heten.
+In iOS 26 heet het zoekveld onderaan **Zoek taken**, en **Einde als** / **Einde herhaal** worden niet
+als losse regels getoond: je ziet aan het inspringen wat binnen een blok staat.
 "Tik boven het toetsenbord op …" = in de balk met variabelen die boven het toetsenbord verschijnt.
 
 ### 1. Sleutel
 
 **Actie 1 – Tekst**
-1. Tik onderaan op het zoekveld en typ: `tekst`
+1. Tik onderaan op het zoekveld **Zoek taken** en typ: `tekst`
 2. Tik op **Tekst**.
 3. Tik in het tekstvak, wis wat er staat en plak je eigen AssemblyAI-sleutel.
 
@@ -77,7 +79,7 @@ Sleutel
 ### 2. Uploaden
 
 **Actie 3 – Haal inhoud van URL op**
-1. Tik onderaan op het zoekveld en typ: `inhoud van url`
+1. Tik onderaan op het zoekveld **Zoek taken** en typ: `inhoud van url`
 2. Tik op **Haal inhoud van URL op**.
 3. Tik in de actie op het blauwe woord **URL** en plak:
 ```
@@ -226,10 +228,11 @@ Er staan nu twee regels: **Herhaal 200 keer** en **Einde herhaal**.
    (De regels **Anders** en **Einde als** schuiven mee.)
 4. Tik op **Invoer** en kies **Status**.
 5. Tik op **Voorwaarde** en kies **is niet**.
-6. Tik op **Tekst** en plak:
+6. Tik op het lege vak rechts naast **is niet** (of op de actie zelf, dan klapt hij open) en plak:
 ```
 completed
 ```
+   Zolang dit vak leeg is, kleurt **is niet** rood met de melding "Kies een waarde voor elke parameter".
 
 ---
 
@@ -239,10 +242,11 @@ completed
 3. Sleep hem direct onder **Als Status is niet completed** (dus vóór de eerste **Anders**).
 4. Tik op **Invoer** en kies **Status**.
 5. Tik op **Voorwaarde** en kies **is niet**.
-6. Tik op **Tekst** en plak:
+6. Tik op het lege vak rechts naast **is niet** (of op de actie zelf, dan klapt hij open) en plak:
 ```
 error
 ```
+   Zolang dit vak leeg is, kleurt **is niet** rood met de melding "Kies een waarde voor elke parameter".
 
 ---
 
