@@ -35,6 +35,11 @@ Werkt ook voor opnames van je Apple Watch: die staan vanzelf in Dictafoon op de 
 
 ## De acties
 
+**Een actie toevoegen:** tik onderaan in de opdracht op het zoekveld **Zoek naar apps en acties**
+(of op **+ Voeg actie toe** / **Voeg actie toe**). Typ de zoekterm achter ➕ en tik op het resultaat met
+precies die naam. De actie komt **onderaan** de opdracht te staan. Moet hij binnen een **Als** of
+**Herhaal**: houd de actie vast en sleep hem tussen de regels **Als … / Einde als** of **Herhaal / Einde herhaal**.
+
 **Zo lees je dit:**
 - Een grijs blok = tekst die je **kopieert en plakt**, precies zoals hij is.
 - **🔵 Variabele** = die kun je niet plakken. Tik in het veld en kies hem in de balk boven het toetsenbord
@@ -47,11 +52,15 @@ Werkt ook voor opnames van je Apple Watch: die staan vanzelf in Dictafoon op de 
 ### 1. Sleutel
 
 **Actie 1 – Tekst** (Text)
+➕ Zoek: `tekst` → tik op **Tekst** (alleen dat woord, geel icoon)
+
 Plak je eigen AssemblyAI-sleutel in het tekstvak.
 
 ---
 
 **Actie 2 – Stel variabele in** (Set Variable)
+➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
+
 Variabelenaam:
 ```
 Sleutel
@@ -63,6 +72,8 @@ Invoer: 🔵 **Tekst**
 ### 2. Uploaden
 
 **Actie 3 – Haal inhoud van URL op** (Get Contents of URL)
+➕ Zoek: `inhoud van url` → tik op **Haal inhoud van URL op**
+
 URL:
 ```
 https://api.eu.assemblyai.com/v2/upload
@@ -79,6 +90,8 @@ Tik op **›** (meer opties):
 ---
 
 **Actie 4 – Haal woordenboekwaarde op** (Get Dictionary Value)
+➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
+
 Haal **Waarde** op voor sleutel:
 ```
 upload_url
@@ -90,6 +103,8 @@ in: 🔵 **Inhoud van URL**
 ### 3. Uitschrijven starten
 
 **Actie 5 – Haal inhoud van URL op**
+➕ Zoek: `inhoud van url` → tik op **Haal inhoud van URL op**
+
 URL:
 ```
 https://api.eu.assemblyai.com/v2/transcript
@@ -139,6 +154,8 @@ Tik op **›**:
 ---
 
 **Actie 6 – Haal woordenboekwaarde op**
+➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
+
 Haal **Waarde** op voor sleutel:
 ```
 id
@@ -148,6 +165,8 @@ in: 🔵 **Inhoud van URL**
 ---
 
 **Actie 7 – Stel variabele in**
+➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
+
 Variabelenaam:
 ```
 ID
@@ -157,6 +176,8 @@ Invoer: 🔵 **Woordenboekwaarde**
 ---
 
 **Actie 8 – Tekst**
+➕ Zoek: `tekst` → tik op **Tekst** (alleen dat woord, geel icoon)
+
 ```
 queued
 ```
@@ -164,6 +185,8 @@ queued
 ---
 
 **Actie 9 – Stel variabele in**
+➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
+
 Variabelenaam:
 ```
 Status
@@ -175,6 +198,8 @@ Invoer: 🔵 **Tekst**
 ### 4. Wachten tot het klaar is
 
 **Actie 10 – Herhaal** (Repeat)
+➕ Zoek: `herhaal` → tik op **Herhaal** (niet "Herhaal met elk")
+
 Aantal keer:
 ```
 200
@@ -183,6 +208,8 @@ Aantal keer:
 ---
 
 **Actie 11 – Als** (If) — binnen Herhaal
+➕ Zoek: `als` → tik op **Als** (grijs icoon, categorie Scripting; niet "Als … aanwezig")
+
 Invoer: 🔵 **Status** · voorwaarde: **is niet** · tekst:
 ```
 completed
@@ -192,6 +219,8 @@ Komt er een **Anders** bij? Laat die leeg.
 ---
 
 **Actie 12 – Als** — binnen actie 11
+➕ Zoek: `als` → tik op **Als** (grijs icoon, categorie Scripting; niet "Als … aanwezig")
+
 Invoer: 🔵 **Status** · voorwaarde: **is niet** · tekst:
 ```
 error
@@ -200,6 +229,8 @@ error
 ---
 
 **Actie 13 – Wacht** (Wait) — binnen actie 12
+➕ Zoek: `wacht` → tik op **Wacht**
+
 Seconden:
 ```
 3
@@ -208,6 +239,8 @@ Seconden:
 ---
 
 **Actie 14 – Haal inhoud van URL op** — binnen actie 12
+➕ Zoek: `inhoud van url` → tik op **Haal inhoud van URL op**
+
 URL: plak eerst dit (met de schuine streep aan het eind):
 ```
 https://api.eu.assemblyai.com/v2/transcript/
@@ -224,6 +257,8 @@ Tik op **›**:
 ---
 
 **Actie 15 – Stel variabele in** — binnen actie 12
+➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
+
 Variabelenaam:
 ```
 Resultaat
@@ -233,6 +268,8 @@ Invoer: 🔵 **Inhoud van URL**
 ---
 
 **Actie 16 – Haal woordenboekwaarde op** — binnen actie 12
+➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
+
 Haal **Waarde** op voor sleutel:
 ```
 status
@@ -242,6 +279,8 @@ in: 🔵 **Resultaat**
 ---
 
 **Actie 17 – Stel variabele in** — binnen actie 12
+➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
+
 Variabelenaam:
 ```
 Status
@@ -253,6 +292,8 @@ Invoer: 🔵 **Woordenboekwaarde**
 ### 5. Regels maken — ná **Einde herhaal**
 
 **Actie 18 – Haal woordenboekwaarde op**
+➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
+
 Haal **Waarde** op voor sleutel:
 ```
 utterances
@@ -262,11 +303,15 @@ in: 🔵 **Resultaat**
 ---
 
 **Actie 19 – Herhaal met elk** (Repeat with Each)
+➕ Zoek: `herhaal met elk` → tik op **Herhaal met elk**
+
 Invoer: 🔵 **Woordenboekwaarde**
 
 ---
 
 **Actie 20 – Haal woordenboekwaarde op** — binnen Herhaal met elk
+➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
+
 Haal **Waarde** op voor sleutel:
 ```
 speaker
@@ -276,6 +321,8 @@ in: 🔵 **Herhaalonderdeel**
 ---
 
 **Actie 21 – Stel variabele in** — binnen Herhaal met elk
+➕ Zoek: `stel variabele in` → tik op **Stel variabele in**
+
 Variabelenaam:
 ```
 Spreker
@@ -285,6 +332,8 @@ Invoer: 🔵 **Woordenboekwaarde**
 ---
 
 **Actie 22 – Haal woordenboekwaarde op** — binnen Herhaal met elk
+➕ Zoek: `woordenboekwaarde` → tik op **Haal woordenboekwaarde op**
+
 Haal **Waarde** op voor sleutel:
 ```
 text
@@ -294,6 +343,8 @@ in: 🔵 **Herhaalonderdeel**
 ---
 
 **Actie 23 – Tekst** — binnen Herhaal met elk
+➕ Zoek: `tekst` → tik op **Tekst** (alleen dat woord, geel icoon)
+
 Bouw het tekstvak zo op, van links naar rechts:
 1. typ `Spreker` en daarna **één spatie**
 2. 🔵 **Spreker**
@@ -305,6 +356,8 @@ Het ziet er dan zo uit: `Spreker` 🔵Spreker `: ` 🔵Woordenboekwaarde
 ---
 
 **Actie 24 – Combineer tekst** (Combine Text) — ná **Einde herhaal**
+➕ Zoek: `combineer` → tik op **Combineer tekst**
+
 Invoer: 🔵 **Herhaalresultaten** · combineer met: **Nieuwe regel**
 
 ---
@@ -312,11 +365,15 @@ Invoer: 🔵 **Herhaalresultaten** · combineer met: **Nieuwe regel**
 ### 6. Opslaan in Notities
 
 **Actie 25 – Haal naam op** (Get Name)
+➕ Zoek: `haal naam op` → tik op **Haal naam op**
+
 Invoer: 🔵 **Opdrachtinvoer**
 
 ---
 
 **Actie 26 – Tekst**
+➕ Zoek: `tekst` → tik op **Tekst** (alleen dat woord, geel icoon)
+
 Bouw het tekstvak zo op:
 1. 🔵 **Naam**
 2. typ een spatie, een streepje en een spatie
@@ -327,11 +384,15 @@ Bouw het tekstvak zo op:
 ---
 
 **Actie 27 – Maak notitie aan** (Create Note)
+➕ Zoek: `maak notitie` → tik op **Maak notitie aan**
+
 Hoofdtekst: 🔵 **Tekst**
 
 ---
 
 **Actie 28 – Toon notitie** (Show Note) — optioneel, opent de notitie meteen
+➕ Zoek: `notitie` → tik op **Toon notitie (of Open notitie)**
+
 Invoer: 🔵 **Notitie**
 
 ---
