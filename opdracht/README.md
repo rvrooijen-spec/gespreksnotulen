@@ -52,7 +52,7 @@ precies die naam. De actie komt **onderaan** de opdracht te staan. Moet hij binn
 ### 1. Sleutel
 
 **Actie 1 – Tekst** (Text)
-➕ Zoek: `tekst` → tik op **Tekst** (alleen dat woord, geel icoon)
+➕ Zoek: `tekst` → tik op **Tekst** (het resultaat dat alleen "Tekst" heet)
 
 Plak je eigen AssemblyAI-sleutel in het tekstvak.
 
@@ -176,7 +176,7 @@ Invoer: 🔵 **Woordenboekwaarde**
 ---
 
 **Actie 8 – Tekst**
-➕ Zoek: `tekst` → tik op **Tekst** (alleen dat woord, geel icoon)
+➕ Zoek: `tekst` → tik op **Tekst** (het resultaat dat alleen "Tekst" heet)
 
 ```
 queued
@@ -208,7 +208,7 @@ Aantal keer:
 ---
 
 **Actie 11 – Als** (If) — binnen Herhaal
-➕ Zoek: `als` → tik op **Als** (grijs icoon, categorie Scripting; niet "Als … aanwezig")
+➕ Zoek: `als` → tik op **Als** (categorie Scripting)
 
 Invoer: 🔵 **Status** · voorwaarde: **is niet** · tekst:
 ```
@@ -219,7 +219,7 @@ Komt er een **Anders** bij? Laat die leeg.
 ---
 
 **Actie 12 – Als** — binnen actie 11
-➕ Zoek: `als` → tik op **Als** (grijs icoon, categorie Scripting; niet "Als … aanwezig")
+➕ Zoek: `als` → tik op **Als** (categorie Scripting)
 
 Invoer: 🔵 **Status** · voorwaarde: **is niet** · tekst:
 ```
@@ -343,7 +343,7 @@ in: 🔵 **Herhaalonderdeel**
 ---
 
 **Actie 23 – Tekst** — binnen Herhaal met elk
-➕ Zoek: `tekst` → tik op **Tekst** (alleen dat woord, geel icoon)
+➕ Zoek: `tekst` → tik op **Tekst** (het resultaat dat alleen "Tekst" heet)
 
 Bouw het tekstvak zo op, van links naar rechts:
 1. typ `Spreker` en daarna **één spatie**
@@ -372,7 +372,7 @@ Invoer: 🔵 **Opdrachtinvoer**
 ---
 
 **Actie 26 – Tekst**
-➕ Zoek: `tekst` → tik op **Tekst** (alleen dat woord, geel icoon)
+➕ Zoek: `tekst` → tik op **Tekst** (het resultaat dat alleen "Tekst" heet)
 
 Bouw het tekstvak zo op:
 1. 🔵 **Naam**
